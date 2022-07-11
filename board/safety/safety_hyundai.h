@@ -73,6 +73,7 @@ const int HYUNDAI_PARAM_EV_GAS = 1;
 const int HYUNDAI_PARAM_HYBRID_GAS = 2;
 const int HYUNDAI_PARAM_LONGITUDINAL = 4;
 const int HYUNDAI_PARAM_CAMERA_SCC = 8;
+const int HYUNDAI_PARAM_LFA_BTN = 16;
 
 enum {
   HYUNDAI_BTN_NONE = 0,
@@ -91,6 +92,7 @@ bool hyundai_ev_gas_signal = false;
 bool hyundai_hybrid_gas_signal = false;
 bool hyundai_camera_scc = false;
 bool hyundai_longitudinal = false;
+bool hyundai_lfa_button = false;
 
 addr_checks hyundai_rx_checks = {hyundai_addr_checks, HYUNDAI_ADDR_CHECK_LEN};
 
@@ -201,6 +203,36 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       update_sample(&torque_driver, torque_driver_new);
     }
 
+    if (addr == 913) {
+      bool lfa_pressed = (GET_BYTES_04(to_push) >> 4) & 0x1; // LFA_PRESSED signal
+      if (lfa_pressed && !lfa_pressed_prev && hyundai_lfa_button && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+        controls_allowed = 1;
+      }
+      lfa_pressed_prev = lfa_pressed;
+    }
+
+    if (hyundai_longitudinal) {
+      if (addr == 1265) {
+        acc_main_on = GET_BIT(to_push, 3U); // CF_CLU_CRUISESWMAIN signal
+        int main_enabled = false;
+        if (acc_main_on && !acc_main_on_prev) {
+          main_enabled = !main_enabled;
+          if (main_enabled && !hyundai_lfa_button && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+            controls_allowed = 1;
+          }
+        }
+        acc_main_on_prev = acc_main_on;
+      }
+    } else {
+      if (addr == 1056) {
+        acc_main_on = GET_BYTES_04(to_push) & 0x1; // ACC MAIN_ON signal
+        if (acc_main_on && !hyundai_lfa_button && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+          controls_allowed = 1;
+        }
+        acc_main_on_prev = acc_main_on;
+      }
+    }
+
     // ACC steering wheel buttons
     if (addr == 1265) {
       int cruise_button = GET_BYTE(to_push, 0) & 0x7U;
@@ -215,7 +247,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       if (hyundai_longitudinal) {
         // exit controls on cancel press
         if (cruise_button == HYUNDAI_BTN_CANCEL) {
-          controls_allowed = 0;
+          controls_allowed_long = 0;
         }
 
         // enter controls on falling edge of resume or set
@@ -223,9 +255,35 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
         bool res = (cruise_button == HYUNDAI_BTN_NONE) && (cruise_button_prev == HYUNDAI_BTN_RESUME);
         if (set || res) {
           controls_allowed = 1;
+          controls_allowed_long = 1;
         }
 
         cruise_button_prev = cruise_button;
+      }
+    }
+
+    if (hyundai_longitudinal) {
+      if (addr == 1265) {
+        acc_main_on = GET_BIT(to_push, 3U); // CF_CLU_CRUISESWMAIN signal
+        int main_enabled = false;
+        if (acc_main_on && !acc_main_on_prev) {
+          main_enabled = !main_enabled;
+          if (!main_enabled) {
+            disengageFromBrakes = false;
+            controls_allowed = 0;
+            controls_allowed_long = 0;
+          }
+        }
+        acc_main_on_prev = acc_main_on;
+      }
+    } else {
+      if (addr == 1056) {
+        acc_main_on = GET_BYTES_04(to_push) & 0x1; // ACC MAIN_ON signal
+        if (!acc_main_on) {
+          disengageFromBrakes = false;
+          controls_allowed = 0;
+          controls_allowed_long = 0;
+        }
       }
     }
 
@@ -333,7 +391,7 @@ static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
   if ((addr == 1265) && !hyundai_longitudinal) {
     int button = GET_BYTE(to_send, 0) & 0x7U;
 
-    bool allowed_resume = (button == 1) && controls_allowed;
+    bool allowed_resume = (button == 1) && controls_allowed && controls_allowed_long;
     bool allowed_cancel = (button == 4) && cruise_engaged_prev;
     if (!(allowed_resume || allowed_cancel)) {
       tx = 0;
@@ -365,6 +423,7 @@ static const addr_checks* hyundai_init(uint16_t param) {
   hyundai_hybrid_gas_signal = !hyundai_ev_gas_signal && GET_FLAG(param, HYUNDAI_PARAM_HYBRID_GAS);
   hyundai_camera_scc = GET_FLAG(param, HYUNDAI_PARAM_CAMERA_SCC);
   hyundai_last_button_interaction = HYUNDAI_PREV_BUTTON_SAMPLES;
+  hyundai_lfa_button = GET_FLAG(param, HYUNDAI_PARAM_LFA_BTN);
 
 #ifdef ALLOW_DEBUG
   // TODO: add longitudinal support for camera-based SCC platform
@@ -386,6 +445,7 @@ static const addr_checks* hyundai_legacy_init(uint16_t param) {
   hyundai_ev_gas_signal = GET_FLAG(param, HYUNDAI_PARAM_EV_GAS);
   hyundai_hybrid_gas_signal = !hyundai_ev_gas_signal && GET_FLAG(param, HYUNDAI_PARAM_HYBRID_GAS);
   hyundai_last_button_interaction = HYUNDAI_PREV_BUTTON_SAMPLES;
+  hyundai_lfa_button = GET_FLAG(param, HYUNDAI_PARAM_LFA_BTN);
   hyundai_rx_checks = (addr_checks){hyundai_legacy_addr_checks, HYUNDAI_LEGACY_ADDR_CHECK_LEN};
   return &hyundai_rx_checks;
 }
