@@ -144,6 +144,7 @@ bool brake_pressed_prev = false;
 bool cruise_engaged_prev = false;
 bool acc_main_on_prev = false;
 bool lfa_pressed_prev = false;
+bool set_me_prev = false;
 float vehicle_speed = 0;
 bool vehicle_moving = false;
 bool acc_main_on = false;  // referred to as "ACC off" in ISO 15622:2018
