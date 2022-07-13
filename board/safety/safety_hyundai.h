@@ -74,6 +74,7 @@ const int HYUNDAI_PARAM_HYBRID_GAS = 2;
 const int HYUNDAI_PARAM_LONGITUDINAL = 4;
 const int HYUNDAI_PARAM_CAMERA_SCC = 8;
 const int HYUNDAI_PARAM_LFA_BTN = 16;
+const int HYUNDAI_PARAM_ESCC = 32;
 
 enum {
   HYUNDAI_BTN_NONE = 0,
@@ -93,6 +94,8 @@ bool hyundai_hybrid_gas_signal = false;
 bool hyundai_camera_scc = false;
 bool hyundai_longitudinal = false;
 bool hyundai_lfa_button = false;
+bool hyundai_escc = false;
+bool hyundai_fwd_aeb = false;
 
 addr_checks hyundai_rx_checks = {hyundai_addr_checks, HYUNDAI_ADDR_CHECK_LEN};
 
@@ -308,6 +311,29 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       brake_pressed = GET_BIT(to_push, 55U) != 0U;
     }
 
+    if (addr == 909) {
+      int CR_VSM_DecCmd = GET_BYTE(to_push, 1);
+      int FCA_CmdAct = GET_BIT(to_push, 20U);
+      int CF_VSM_DecCmdAct = GET_BIT(to_push, 31U);
+
+      if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
+        hyundai_fwd_aeb = true;
+      } else {
+        hyundai_fwd_aeb = false;
+      }
+    }
+
+    if (addr == 1057) {
+      int aeb_decel_cmd = GET_BYTE(to_push, 2);
+      int aeb_req = GET_BIT(to_push, 54U);
+
+      if ((aeb_decel_cmd != 0) || (aeb_req != 0)) {
+        hyundai_fwd_aeb = true;
+      } else {
+        hyundai_fwd_aeb = false;
+      }
+    }
+
     bool stock_ecu_detected = (addr == 832);
 
     // If openpilot is controlling longitudinal we need to ensure the radar is turned off
@@ -339,7 +365,7 @@ static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
     int FCA_CmdAct = GET_BIT(to_send, 20U);
     int CF_VSM_DecCmdAct = GET_BIT(to_send, 31U);
 
-    if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
+    if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0) || hyundai_fwd_aeb) {
       tx = 0;
     }
   }
@@ -365,7 +391,7 @@ static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
     violation |= (aeb_decel_cmd != 0);
     violation |= (aeb_req != 0);
 
-    if (violation) {
+    if (violation || hyundai_fwd_aeb) {
       tx = 0;
     }
   }
@@ -381,7 +407,7 @@ static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
   }
 
   // UDS: Only tester present ("\x02\x3E\x80\x00\x00\x00\x00\x00") allowed on diagnostics address
-  if (addr == 2000) {
+  if ((addr == 2000) && !hyundai_escc) {
     if ((GET_BYTES_04(to_send) != 0x00803E02U) || (GET_BYTES_48(to_send) != 0x0U)) {
       tx = 0;
     }
@@ -424,6 +450,7 @@ static const addr_checks* hyundai_init(uint16_t param) {
   hyundai_camera_scc = GET_FLAG(param, HYUNDAI_PARAM_CAMERA_SCC);
   hyundai_last_button_interaction = HYUNDAI_PREV_BUTTON_SAMPLES;
   hyundai_lfa_button = GET_FLAG(param, HYUNDAI_PARAM_LFA_BTN);
+  hyundai_escc = GET_FLAG(param, HYUNDAI_PARAM_ESCC);
 
 #ifdef ALLOW_DEBUG
   // TODO: add longitudinal support for camera-based SCC platform
@@ -446,6 +473,7 @@ static const addr_checks* hyundai_legacy_init(uint16_t param) {
   hyundai_hybrid_gas_signal = !hyundai_ev_gas_signal && GET_FLAG(param, HYUNDAI_PARAM_HYBRID_GAS);
   hyundai_last_button_interaction = HYUNDAI_PREV_BUTTON_SAMPLES;
   hyundai_lfa_button = GET_FLAG(param, HYUNDAI_PARAM_LFA_BTN);
+  hyundai_escc = GET_FLAG(param, HYUNDAI_PARAM_ESCC);
   hyundai_rx_checks = (addr_checks){hyundai_legacy_addr_checks, HYUNDAI_LEGACY_ADDR_CHECK_LEN};
   return &hyundai_rx_checks;
 }
