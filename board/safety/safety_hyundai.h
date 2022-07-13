@@ -220,7 +220,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
         int main_enabled = false;
         if (acc_main_on && !acc_main_on_prev) {
           main_enabled = !main_enabled;
-          if (main_enabled && !hyundai_lfa_button && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+          if (main_enabled && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
             controls_allowed = 1;
           }
         }
@@ -229,7 +229,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
     } else {
       if (addr == 1056) {
         acc_main_on = GET_BYTES_04(to_push) & 0x1; // ACC MAIN_ON signal
-        if (acc_main_on && !hyundai_lfa_button && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+        if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
           controls_allowed = 1;
         }
         acc_main_on_prev = acc_main_on;
