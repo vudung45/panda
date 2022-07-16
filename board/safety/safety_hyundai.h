@@ -80,6 +80,7 @@ enum {
   HYUNDAI_BTN_NONE = 0,
   HYUNDAI_BTN_RESUME = 1,
   HYUNDAI_BTN_SET = 2,
+  HYUNDAI_BTN_GAP = 3,
   HYUNDAI_BTN_CANCEL = 4,
 };
 
@@ -240,8 +241,10 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
     if (addr == 1265) {
       int cruise_button = GET_BYTE(to_push, 0) & 0x7U;
       int main_button = GET_BIT(to_push, 3U);
+      uint32_t ts = microsecond_timer_get();
+      uint32_t hold_count = 0;
 
-      if ((cruise_button == HYUNDAI_BTN_RESUME) || (cruise_button == HYUNDAI_BTN_SET) || (cruise_button == HYUNDAI_BTN_CANCEL) || (main_button != 0)) {
+      if ((cruise_button == HYUNDAI_BTN_RESUME) || (cruise_button == HYUNDAI_BTN_SET) || (cruise_button == HYUNDAI_BTN_GAP) || (cruise_button == HYUNDAI_BTN_CANCEL) || (main_button != 0)) {
         hyundai_last_button_interaction = 0U;
       } else {
         hyundai_last_button_interaction = MIN(hyundai_last_button_interaction + 1U, HYUNDAI_PREV_BUTTON_SAMPLES);
@@ -262,6 +265,16 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
         }
 
         cruise_button_prev = cruise_button;
+      }
+
+      if ((cruise_button == HYUNDAI_BTN_GAP) && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+        hold_count += ts;
+        if (hold_count > 500000) {
+          hold_count = 0;
+          controls_allowed = 1;
+        }
+      } else {
+        hold_count = 0;
       }
     }
 
