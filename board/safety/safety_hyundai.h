@@ -96,7 +96,6 @@ bool hyundai_camera_scc = false;
 bool hyundai_longitudinal = false;
 bool hyundai_lfa_button = false;
 bool hyundai_escc = false;
-bool hyundai_fwd_aeb = false;
 
 addr_checks hyundai_rx_checks = {hyundai_addr_checks, HYUNDAI_ADDR_CHECK_LEN};
 
@@ -324,29 +323,6 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       brake_pressed = GET_BIT(to_push, 55U) != 0U;
     }
 
-    if (addr == 909) {
-      int CR_VSM_DecCmd = GET_BYTE(to_push, 1);
-      int FCA_CmdAct = GET_BIT(to_push, 20U);
-      int CF_VSM_DecCmdAct = GET_BIT(to_push, 31U);
-
-      if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
-        hyundai_fwd_aeb = true;
-      } else {
-        hyundai_fwd_aeb = false;
-      }
-    }
-
-    if (addr == 1057) {
-      int aeb_decel_cmd = GET_BYTE(to_push, 2);
-      int aeb_req = GET_BIT(to_push, 54U);
-
-      if ((aeb_decel_cmd != 0) || (aeb_req != 0)) {
-        hyundai_fwd_aeb = true;
-      } else {
-        hyundai_fwd_aeb = false;
-      }
-    }
-
     bool stock_ecu_detected = (addr == 832);
 
     // If openpilot is controlling longitudinal we need to ensure the radar is turned off
@@ -378,7 +354,7 @@ static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
     int FCA_CmdAct = GET_BIT(to_send, 20U);
     int CF_VSM_DecCmdAct = GET_BIT(to_send, 31U);
 
-    if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0) || hyundai_fwd_aeb) {
+    if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
       tx = 0;
     }
   }
@@ -404,7 +380,7 @@ static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
     violation |= (aeb_decel_cmd != 0);
     violation |= (aeb_req != 0);
 
-    if (violation || hyundai_fwd_aeb) {
+    if (violation) {
       tx = 0;
     }
   }
