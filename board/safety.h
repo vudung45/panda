@@ -572,10 +572,11 @@ bool steer_torque_cmd_checks(int desired_torque, int steer_req, const SteeringLi
 void pcm_cruise_check(bool cruise_engaged) {
   // Enter controls on rising edge of stock ACC, exit controls if stock ACC disengages
   if (!cruise_engaged) {
-    controls_allowed = false;
+    controls_allowed_long = false;
   }
   if (cruise_engaged && !cruise_engaged_prev) {
     controls_allowed = true;
+    controls_allowed_long = true;
   }
   cruise_engaged_prev = cruise_engaged;
 }
