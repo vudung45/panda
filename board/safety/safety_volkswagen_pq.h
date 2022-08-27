@@ -121,16 +121,21 @@ static int volkswagen_pq_rx_hook(CANPacket_t *to_push) {
       update_sample(&torque_driver, torque_driver_new);
     }
 
-    if (volkswagen_pq_longitudinal) {
-      if (addr == MSG_MOTOR_5) {
-        // ACC main switch on is a prerequisite to enter controls, exit controls immediately on main switch off
-        // Signal: Motor_5.GRA_Hauptschalter
-        acc_main_on = GET_BIT(to_push, 50U);
-        if (!acc_main_on) {
-          controls_allowed = 0;
-        }
+    if (addr == MSG_MOTOR_5) {
+      // ACC main switch on is a prerequisite to enter controls, exit controls immediately on main switch off
+      // Signal: Motor_5.GRA_Hauptschalter
+      acc_main_on = GET_BIT(to_push, 50U);
+      if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+        controls_allowed = 1;
       }
+      if (!acc_main_on) {
+        disengageFromBrakes = false;
+        controls_allowed = 0;
+        controls_allowed_long = 0;
+      }
+    }
 
+    if (volkswagen_pq_longitudinal) {
       if (addr == MSG_GRA_NEU) {
         // If ACC main switch is on, enter controls on falling edge of Set or Resume
         // Signal: GRA_Neu.GRA_Neu_Setzen
@@ -226,7 +231,7 @@ static int volkswagen_pq_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed
 
   // FORCE CANCEL: ensuring that only the cancel button press is sent when controls are off.
   // This avoids unintended engagements while still allowing resume spam
-  if ((addr == MSG_GRA_NEU) && !controls_allowed) {
+  if ((addr == MSG_GRA_NEU) && !controls_allowed_long) {
     // Signal: GRA_Neu.GRA_Neu_Setzen
     // Signal: GRA_Neu.GRA_Neu_Recall
     if (GET_BIT(to_send, 16U) || GET_BIT(to_send, 17U)) {
