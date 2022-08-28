@@ -190,12 +190,25 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       int cruise_engaged = (GET_BYTES_04(to_push) >> 13) & 0x3U;
       if (cruise_engaged && !cruise_engaged_prev && (hyundai_last_button_interaction < HYUNDAI_PREV_BUTTON_SAMPLES)) {
         controls_allowed = 1;
+        controls_allowed_long = 1;
       }
 
       if (!cruise_engaged) {
-        controls_allowed = 0;
+        controls_allowed_long = 0;
       }
       cruise_engaged_prev = cruise_engaged;
+    }
+
+    if (addr == 1056) {
+      acc_main_on = GET_BYTES_04(to_push) & 0x1; // ACC MAIN_ON signal
+      if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+        controls_allowed = 1;
+      }
+      if (!acc_main_on) {
+        disengageFromBrakes = false;
+        controls_allowed = 0;
+        controls_allowed_long = 0;
+      }
     }
   }
 
@@ -223,14 +236,11 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
           if (main_enabled && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
             controls_allowed = 1;
           }
-        }
-        acc_main_on_prev = acc_main_on;
-      }
-    } else {
-      if (addr == 1056) {
-        acc_main_on = GET_BYTES_04(to_push) & 0x1; // ACC MAIN_ON signal
-        if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
-          controls_allowed = 1;
+          if (!main_enabled) {
+            disengageFromBrakes = false;
+            controls_allowed = 0;
+            controls_allowed_long = 0;
+          }
         }
         acc_main_on_prev = acc_main_on;
       }
@@ -274,31 +284,6 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
         }
       } else {
         hold_count = 0;
-      }
-    }
-
-    if (hyundai_longitudinal) {
-      if (addr == 1265) {
-        acc_main_on = GET_BIT(to_push, 3U); // CF_CLU_CRUISESWMAIN signal
-        int main_enabled = false;
-        if (acc_main_on && !acc_main_on_prev) {
-          main_enabled = !main_enabled;
-          if (!main_enabled) {
-            disengageFromBrakes = false;
-            controls_allowed = 0;
-            controls_allowed_long = 0;
-          }
-        }
-        acc_main_on_prev = acc_main_on;
-      }
-    } else {
-      if (addr == 1056) {
-        acc_main_on = GET_BYTES_04(to_push) & 0x1; // ACC MAIN_ON signal
-        if (!acc_main_on) {
-          disengageFromBrakes = false;
-          controls_allowed = 0;
-          controls_allowed_long = 0;
-        }
       }
     }
 
@@ -388,39 +373,8 @@ static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
   // LKA STEER: safety check
   if (addr == 832) {
     int desired_torque = ((GET_BYTES_04(to_send) >> 16) & 0x7ffU) - 1024U;
-    uint32_t ts = microsecond_timer_get();
-    bool violation = 0;
 
-    if (controls_allowed) {
-
-      // *** global torque limit check ***
-      violation |= max_limit_check(desired_torque, HYUNDAI_MAX_STEER, -HYUNDAI_MAX_STEER);
-
-      // *** torque rate limit check ***
-      violation |= driver_limit_check(desired_torque, desired_torque_last, &torque_driver,
-        HYUNDAI_MAX_STEER, HYUNDAI_MAX_RATE_UP, HYUNDAI_MAX_RATE_DOWN,
-        HYUNDAI_DRIVER_TORQUE_ALLOWANCE, HYUNDAI_DRIVER_TORQUE_FACTOR);
-
-      // used next time
-      desired_torque_last = desired_torque;
-
-      // *** torque real time rate limit check ***
-      violation |= rt_rate_limit_check(desired_torque, rt_torque_last, HYUNDAI_MAX_RT_DELTA);
-
-      // every RT_INTERVAL set the new limits
-      uint32_t ts_elapsed = get_ts_elapsed(ts, ts_last);
-      if (ts_elapsed > HYUNDAI_RT_INTERVAL) {
-        rt_torque_last = desired_torque;
-        ts_last = ts;
-      }
-    }
-
-    // no torque if controls is not allowed
-    if (!controls_allowed && (desired_torque != 0)) {
-      violation = 1;
-    }
-
-    if (steer_torque_cmd_checks(desired_torque, steer_req, HYUNDAI_STEERING_LIMITS)) {
+    if (steer_torque_cmd_checks(desired_torque, -1, HYUNDAI_STEERING_LIMITS)) {
       tx = 0;
     }
   }
