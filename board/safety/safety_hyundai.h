@@ -334,7 +334,7 @@ static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
   }
 
   // FCA11: Block any potential actuation
-  /**if (addr == 909) {
+  if (addr == 909) {
     int CR_VSM_DecCmd = GET_BYTE(to_send, 1);
     int FCA_CmdAct = GET_BIT(to_send, 20U);
     int CF_VSM_DecCmdAct = GET_BIT(to_send, 31U);
@@ -342,15 +342,15 @@ static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
     if ((CR_VSM_DecCmd != 0) || (FCA_CmdAct != 0) || (CF_VSM_DecCmdAct != 0)) {
       tx = 0;
     }
-  }**/
+  }
 
   // ACCEL: safety check
   if (addr == 1057) {
     int desired_accel_raw = (((GET_BYTE(to_send, 4) & 0x7U) << 8) | GET_BYTE(to_send, 3)) - 1023U;
     int desired_accel_val = ((GET_BYTE(to_send, 5) << 3) | (GET_BYTE(to_send, 4) >> 5)) - 1023U;
 
-    /**int aeb_decel_cmd = GET_BYTE(to_send, 2);
-    int aeb_req = GET_BIT(to_send, 54U);**/
+    int aeb_decel_cmd = GET_BYTE(to_send, 2);
+    int aeb_req = GET_BIT(to_send, 54U);
 
     bool violation = 0;
 
@@ -362,8 +362,8 @@ static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
     violation |= max_limit_check(desired_accel_raw, HYUNDAI_MAX_ACCEL, HYUNDAI_MIN_ACCEL);
     violation |= max_limit_check(desired_accel_val, HYUNDAI_MAX_ACCEL, HYUNDAI_MIN_ACCEL);
 
-    /**violation |= (aeb_decel_cmd != 0);
-    violation |= (aeb_req != 0);**/
+    violation |= (aeb_decel_cmd != 0);
+    violation |= (aeb_req != 0);
 
     if (violation) {
       tx = 0;
