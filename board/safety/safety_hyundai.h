@@ -308,6 +308,27 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       brake_pressed = GET_BIT(to_push, 55U) != 0U;
     }
 
+    if (hyundai_longitudinal && hyundai_escc) {
+      if (addr == 683) {
+        int FCA_CmdAct = GET_BIT(to_send, 0U);
+        int CF_VSM_Warn_FCA11 = (GET_BYTE(to_push, 0) >> 1) & 0x3U;
+        int AEB_CmdAct = GET_BIT(to_send, 3U);
+        int CF_VSM_Warn_SCC12 = (GET_BYTE(to_push, 0) >> 4) & 0x3U;
+        int CF_VSM_DecCmdAct_SCC12 = GET_BIT(to_send, 6U);
+        int CF_VSM_DecCmdAct_FCA11 = GET_BIT(to_send, 7U);
+        bool allowed_resume = false;
+
+        if (((CF_VSM_Warn_FCA11 != 0) && ((CF_VSM_DecCmdAct_FCA11 != 0) || (FCA_CmdAct != 0))) ||
+            ((CF_VSM_Warn_SCC12 != 0) && ((CF_VSM_DecCmdAct_SCC12 != 0) || (AEB_CmdAct != 0)))) {
+          controls_allowed_long = 0;
+          allowed_resume = true;
+        } else if (allowed_resume == true) {
+          controls_allowed_long = 1;
+          allowed_resume = false;
+        }
+      }
+    }
+
     bool stock_ecu_detected = (addr == 832);
 
     // If openpilot is controlling longitudinal we need to ensure the radar is turned off
