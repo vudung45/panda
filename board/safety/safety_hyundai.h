@@ -310,12 +310,12 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
 
     if (hyundai_longitudinal && hyundai_escc) {
       if (addr == 683) {
-        int FCA_CmdAct = GET_BIT(to_send, 0U);
+        int FCA_CmdAct = GET_BIT(to_push, 0U);
         int CF_VSM_Warn_FCA11 = (GET_BYTE(to_push, 0) >> 1) & 0x3U;
-        int AEB_CmdAct = GET_BIT(to_send, 3U);
+        int AEB_CmdAct = GET_BIT(to_push, 3U);
         int CF_VSM_Warn_SCC12 = (GET_BYTE(to_push, 0) >> 4) & 0x3U;
-        int CF_VSM_DecCmdAct_SCC12 = GET_BIT(to_send, 6U);
-        int CF_VSM_DecCmdAct_FCA11 = GET_BIT(to_send, 7U);
+        int CF_VSM_DecCmdAct_SCC12 = GET_BIT(to_push, 6U);
+        int CF_VSM_DecCmdAct_FCA11 = GET_BIT(to_push, 7U);
         bool allowed_resume = false;
 
         if (((CF_VSM_Warn_FCA11 != 0) && ((CF_VSM_DecCmdAct_FCA11 != 0) || (FCA_CmdAct != 0))) ||
