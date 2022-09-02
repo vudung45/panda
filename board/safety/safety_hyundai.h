@@ -45,8 +45,6 @@ AddrCheckStruct hyundai_addr_checks[] = {
            {881, 0, 8, .expected_timestep = 10000U}, { 0 }}},
   {.msg = {{902, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
   {.msg = {{916, 0, 8, .check_checksum = true, .max_counter = 7U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{1056, 0, 8, .max_counter = 15U, .expected_timestep = 20000U},
-           {1056, 2, 8, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }}},
   {.msg = {{1057, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U},
            {1057, 2, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }}},
 };
@@ -67,7 +65,6 @@ AddrCheckStruct hyundai_legacy_addr_checks[] = {
            {881, 0, 8, .expected_timestep = 10000U}, { 0 }}},
   {.msg = {{902, 0, 8, .expected_timestep = 10000U}, { 0 }, { 0 }}},
   {.msg = {{916, 0, 8, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{1056, 0, 8, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
   {.msg = {{1057, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 20000U}, { 0 }, { 0 }}},
 };
 #define HYUNDAI_LEGACY_ADDR_CHECK_LEN (sizeof(hyundai_legacy_addr_checks) / sizeof(hyundai_legacy_addr_checks[0]))
@@ -191,6 +188,15 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       // ACC main state
       if (addr == 1056) {
         acc_main_on = GET_BIT(to_push, 0U);
+        // ACC main state
+        if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+          controls_allowed = 1;
+        }
+        if (!acc_main_on) {
+          disengageFromBrakes = false;
+          controls_allowed = 0;
+          controls_allowed_long = 0;
+        }
       }
       // enter controls on rising edge of ACC and user button press, exit controls when ACC off
       if (addr == 1057) {
@@ -227,6 +233,15 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
     // ACC main state
     if (hyundai_longitudinal && !hyundai_camera_scc && (addr == 608)) {
       acc_main_on = GET_BIT(to_push, 25U);
+      // ACC main state
+      if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+        controls_allowed = 1;
+      }
+      if (!acc_main_on) {
+        disengageFromBrakes = false;
+        controls_allowed = 0;
+        controls_allowed_long = 0;
+      }
     }
 
     // ACC steering wheel buttons
@@ -299,16 +314,6 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       stock_ecu_detected = true;
     }
     generic_rx_checks(stock_ecu_detected);
-  }
-
-  // ACC main state
-  if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
-    controls_allowed = 1;
-  }
-  if (!acc_main_on) {
-    disengageFromBrakes = false;
-    controls_allowed = 0;
-    controls_allowed_long = 0;
   }
   return valid;
 }
