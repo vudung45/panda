@@ -230,24 +230,11 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       lfa_pressed_prev = lfa_pressed;
     }
 
-    // ACC main state
-    if (hyundai_longitudinal && !hyundai_camera_scc && (addr == 608)) {
-      acc_main_on = GET_BIT(to_push, 25U);
-      // ACC main state
-      if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
-        controls_allowed = 1;
-      }
-      if (!acc_main_on) {
-        disengageFromBrakes = false;
-        controls_allowed = 0;
-        controls_allowed_long = 0;
-      }
-    }
-
     // ACC steering wheel buttons
     if (addr == 1265) {
       int cruise_button = GET_BYTE(to_push, 0) & 0x7U;
       int main_button = GET_BIT(to_push, 3U);
+      int main_button_prev = 0;
       uint32_t ts = microsecond_timer_get();
       uint32_t hold_count = 0;
 
@@ -272,6 +259,20 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
         }
 
         cruise_button_prev = cruise_button;
+
+        // enter controls on rising edge of main
+        acc_main_on = (main_button == 1) && (main_button_prev == HYUNDAI_BTN_NONE);
+        if (acc_main_on && !acc_main_on_prev && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+          controls_allowed = 1;
+        }
+        if (acc_main_on_prev != acc_main_on) {
+          disengageFromBrakes = false;
+          controls_allowed = 0;
+          controls_allowed_long = 0;
+        }
+
+        main_button_prev = main_button;
+        acc_main_on_prev = acc_main_on;
       }
 
       if ((cruise_button == HYUNDAI_BTN_GAP) && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
