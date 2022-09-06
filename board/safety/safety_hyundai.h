@@ -235,6 +235,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       int cruise_button = GET_BYTE(to_push, 0) & 0x7U;
       int main_button = GET_BIT(to_push, 3U);
       int main_button_prev = 0;
+      bool main_enabled = false;
       uint32_t ts = microsecond_timer_get();
       uint32_t hold_count = 0;
 
@@ -261,13 +262,12 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
         cruise_button_prev = cruise_button;
 
         // enter controls on rising edge of main
-        bool main_on = (main_button == 1) && (main_button_prev == HYUNDAI_BTN_NONE);
-        if (main_on) {
-          acc_main_on = !acc_main_on;
-          if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+        if (main_button && !main_button_prev) {
+          main_enabled = !main_enabled;
+          if (main_enabled && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
             controls_allowed = 1;
           }
-          if (!acc_main_on) {
+          if (!main_enabled) {
             disengageFromBrakes = false;
             controls_allowed = 0;
             controls_allowed_long = 0;
