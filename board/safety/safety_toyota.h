@@ -55,12 +55,6 @@ bool toyota_alt_brake = false;
 bool toyota_stock_longitudinal = false;
 int toyota_dbc_eps_torque_factor = 100;   // conversion factor for STEER_TORQUE_EPS in %: see dbc file
 
-// the EPS faults when the steering angle rate is above a certain threshold for too long. to prevent this,
-// we allow setting STEER_REQUEST bit to 0 while maintaining the request torque value for a single frame
-// every TOYOTA_MIN_VALID_STEERING_FRAMES frames.
-const uint8_t TOYOTA_MIN_VALID_STEERING_FRAMES = 19U;
-uint8_t toyota_valid_steering_frame_count;  // counter for steer request bit matching non-zero torque
-
 static uint32_t toyota_compute_checksum(CANPacket_t *to_push) {
   int addr = GET_ADDR(to_push);
   int len = GET_LEN(to_push);
@@ -256,7 +250,6 @@ static int toyota_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
 
 static const addr_checks* toyota_init(uint16_t param) {
   gas_interceptor_detected = 0;
-  toyota_valid_steering_frame_count = 0U;
   toyota_alt_brake = GET_FLAG(param, TOYOTA_PARAM_ALT_BRAKE);
   toyota_stock_longitudinal = GET_FLAG(param, TOYOTA_PARAM_STOCK_LONGITUDINAL);
   toyota_dbc_eps_torque_factor = param & TOYOTA_EPS_FACTOR;
