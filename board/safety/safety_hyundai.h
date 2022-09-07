@@ -237,7 +237,6 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       int main_button_prev = 0;
       bool main_enabled = false;
       uint32_t ts = microsecond_timer_get();
-      uint32_t hold_count = 0;
 
       if ((cruise_button == HYUNDAI_BTN_RESUME) || (cruise_button == HYUNDAI_BTN_SET) || (cruise_button == HYUNDAI_BTN_GAP) || (cruise_button == HYUNDAI_BTN_CANCEL) || (main_button != 0)) {
         hyundai_last_button_interaction = 0U;
@@ -275,16 +274,6 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
         }
 
         main_button_prev = main_button;
-      }
-
-      if ((cruise_button == HYUNDAI_BTN_GAP) && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
-        hold_count += ts;
-        if (hold_count > 500000) {
-          hold_count = 0;
-          controls_allowed = 1;
-        }
-      } else {
-        hold_count = 0;
       }
     }
 
