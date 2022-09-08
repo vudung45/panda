@@ -236,7 +236,6 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       int main_button = GET_BIT(to_push, 3U);
       int main_button_prev = 0;
       bool main_enabled = false;
-      uint32_t ts = microsecond_timer_get();
 
       if ((cruise_button == HYUNDAI_BTN_RESUME) || (cruise_button == HYUNDAI_BTN_SET) || (cruise_button == HYUNDAI_BTN_GAP) || (cruise_button == HYUNDAI_BTN_CANCEL) || (main_button != 0)) {
         hyundai_last_button_interaction = 0U;
