@@ -70,13 +70,25 @@ static int gm_rx_hook(CANPacket_t *to_push) {
       vehicle_moving = GET_BYTE(to_push, 0) | GET_BYTE(to_push, 1);
     }
 
+    if (addr == 0xC9) {
+      acc_main_on = GET_BIT(to_push, 29U) != 0U;
+      if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+        controls_allowed = 1;
+      }
+      if (!acc_main_on) {
+        disengageFromBrakes = false;
+        controls_allowed = 0;
+        controls_allowed_long = 0;
+      }
+    }
+
     // ACC steering wheel buttons (GM_CAM is tied to the PCM)
     if ((addr == 481) && (gm_hw == GM_ASCM)) {
       int button = (GET_BYTE(to_push, 5) & 0x70U) >> 4;
 
       // exit controls on cancel press
       if (button == GM_BTN_CANCEL) {
-        controls_allowed = 0;
+        controls_allowed_long = 0;
       }
 
       // enter controls on falling edge of set or resume
@@ -84,6 +96,7 @@ static int gm_rx_hook(CANPacket_t *to_push) {
       bool res = (button == GM_BTN_UNPRESS) && (cruise_button_prev == GM_BTN_RESUME);
       if (set || res) {
         controls_allowed = 1;
+        controls_allowed_long = 1;
       }
 
       cruise_button_prev = button;
@@ -110,7 +123,7 @@ static int gm_rx_hook(CANPacket_t *to_push) {
     if (addr == 189) {
       bool regen = GET_BYTE(to_push, 0) & 0x20U;
       if (regen) {
-        controls_allowed = 0;
+        controls_allowed_long = 0;
       }
     }
 
@@ -149,7 +162,7 @@ static int gm_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
   if (!alt_exp_allow_gas) {
     pedal_pressed = pedal_pressed || gas_pressed_prev;
   }
-  bool current_controls_allowed = controls_allowed && !pedal_pressed;
+  bool current_controls_allowed = controls_allowed && (!(pedal_pressed) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE));
 
   // BRAKE: safety check
   if (addr == 789) {
