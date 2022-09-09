@@ -380,8 +380,9 @@ static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
     int button = GET_BYTE(to_send, 0) & 0x7U;
 
     bool allowed_resume = (button == 1) && controls_allowed && controls_allowed_long;
+    bool allowed_set = (button == 2) && controls_allowed && controls_allowed_long;
     bool allowed_cancel = (button == 4) && cruise_engaged_prev;
-    if (!(allowed_resume || allowed_cancel)) {
+    if (!(allowed_resume || allowed_set || allowed_cancel)) {
       tx = 0;
     }
   }
