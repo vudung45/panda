@@ -69,12 +69,21 @@ AddrCheckStruct hyundai_legacy_addr_checks[] = {
 };
 #define HYUNDAI_LEGACY_ADDR_CHECK_LEN (sizeof(hyundai_legacy_addr_checks) / sizeof(hyundai_legacy_addr_checks[0]))
 
+AddrCheckStruct hyundai_non_scc_addr_checks[] = {
+  {.msg = {{608, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
+           {881, 0, 8, .expected_timestep = 10000U}, { 0 }}},
+  {.msg = {{871, 0, 8, .expected_timestep = 10000U}, { 0 }, { 0 }}},
+  {.msg = {{902, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
+};
+#define HYUNDAI_NON_SCC_ADDR_CHECK_LEN (sizeof(hyundai_non_scc_addr_checks) / sizeof(hyundai_non_scc_addr_checks[0]))
+
 const int HYUNDAI_PARAM_EV_GAS = 1;
 const int HYUNDAI_PARAM_HYBRID_GAS = 2;
 const int HYUNDAI_PARAM_LONGITUDINAL = 4;
 const int HYUNDAI_PARAM_CAMERA_SCC = 8;
 const int HYUNDAI_PARAM_LFA_BTN = 16;
 const int HYUNDAI_PARAM_ESCC = 32;
+const int HYUNDAI_PARAM_NON_SCC = 64;
 
 enum {
   HYUNDAI_BTN_NONE = 0,
@@ -96,6 +105,7 @@ bool hyundai_camera_scc = false;
 bool hyundai_longitudinal = false;
 bool hyundai_lfa_button = false;
 bool hyundai_escc = false;
+bool hyundai_non_scc = false;
 
 addr_checks hyundai_rx_checks = {hyundai_addr_checks, HYUNDAI_ADDR_CHECK_LEN};
 
@@ -276,6 +286,33 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       }
     }
 
+    if (hyundai_non_scc) {
+      if (addr == 871) {
+        bool cruise_engaged = GET_BYTE(to_push, 0) != 0U; // CF_Lvr_CruiseSet signal
+        if (cruise_engaged && !cruise_engaged_prev) {
+          controls_allowed = 1;
+          controls_allowed_long = 1;
+        }
+
+        if (!cruise_engaged) {
+          controls_allowed_long = 0;
+        }
+        cruise_engaged_prev = cruise_engaged;
+      }
+
+      if (addr == 608) {
+        acc_main_on = GET_BIT(to_push, 25U); // CRUISE_LAMP_M signal
+        if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+          controls_allowed = 1;
+        }
+        if (!acc_main_on) {
+          disengageFromBrakes = false;
+          controls_allowed = 0;
+          controls_allowed_long = 0;
+        }
+      }
+    }
+
     // read gas pressed signal
     if ((addr == 881) && hyundai_ev_gas_signal) {
       gas_pressed = (((GET_BYTE(to_push, 4) & 0x7FU) << 1) | GET_BYTE(to_push, 3) >> 7) != 0U;
@@ -414,6 +451,7 @@ static const addr_checks* hyundai_init(uint16_t param) {
   hyundai_last_button_interaction = HYUNDAI_PREV_BUTTON_SAMPLES;
   hyundai_lfa_button = GET_FLAG(param, HYUNDAI_PARAM_LFA_BTN);
   hyundai_escc = GET_FLAG(param, HYUNDAI_PARAM_ESCC);
+  hyundai_non_scc = GET_FLAG(param, HYUNDAI_PARAM_NON_SCC);
 
 #ifdef ALLOW_DEBUG
   // TODO: add longitudinal support for camera-based SCC platform
@@ -422,6 +460,8 @@ static const addr_checks* hyundai_init(uint16_t param) {
 
   if (hyundai_longitudinal) {
     hyundai_rx_checks = (addr_checks){hyundai_long_addr_checks, HYUNDAI_LONG_ADDR_CHECK_LEN};
+  } else if (hyundai_non_scc) {
+    hyundai_rx_checks = (addr_checks){hyundai_non_scc_addr_checks, HYUNDAI_NON_SCC_ADDR_CHECK_LEN};
   } else {
     hyundai_rx_checks = (addr_checks){hyundai_addr_checks, HYUNDAI_ADDR_CHECK_LEN};
   }
@@ -437,6 +477,7 @@ static const addr_checks* hyundai_legacy_init(uint16_t param) {
   hyundai_last_button_interaction = HYUNDAI_PREV_BUTTON_SAMPLES;
   hyundai_lfa_button = GET_FLAG(param, HYUNDAI_PARAM_LFA_BTN);
   hyundai_escc = GET_FLAG(param, HYUNDAI_PARAM_ESCC);
+  hyundai_non_scc = GET_FLAG(param, HYUNDAI_PARAM_NON_SCC);
   hyundai_rx_checks = (addr_checks){hyundai_legacy_addr_checks, HYUNDAI_LEGACY_ADDR_CHECK_LEN};
   return &hyundai_rx_checks;
 }
