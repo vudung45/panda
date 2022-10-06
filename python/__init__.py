@@ -478,7 +478,7 @@ class Panda:
       "interrupt_load": a[20],
       "fan_power": a[21],
       "safety_rx_checks_invalid": a[22],
-      "controls_allowed_long": a[22],
+      "controls_allowed_long": a[23],
     }
 
   @ensure_can_health_packet_version
