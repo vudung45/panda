@@ -5,6 +5,7 @@ from panda import Panda
 from panda.tests.safety import libpandasafety_py
 import panda.tests.safety.common as common
 from panda.tests.safety.common import CANPackerPanda, make_msg
+from panda.tests.safety.hyundai_common import HyundaiButtonBase
 
 MAX_ACCEL = 2.0
 MIN_ACCEL = -3.5
@@ -56,61 +57,7 @@ def checksum(msg):
   return addr, t, ret, bus
 
 
-class HyundaiButtonBase: #(common.PandaSafetyTest):
-  # pylint: disable=no-member,abstract-method
-  BUTTONS_BUS = 0  # tx on this bus, rx on 0. added to all `self._tx(self._button_msg(...))`
-  SCC_BUS = 0  # rx on this bus
 
-  def test_button_sends(self):
-    """
-      Only RES and CANCEL buttons are allowed
-      - RES allowed while controls allowed
-      - CANCEL allowed while cruise is enabled
-    """
-    self.safety.set_controls_allowed(0)
-    self.assertFalse(self._tx(self._button_msg(Buttons.RESUME, bus=self.BUTTONS_BUS)))
-    self.assertFalse(self._tx(self._button_msg(Buttons.SET, bus=self.BUTTONS_BUS)))
-
-    self.safety.set_controls_allowed(1)
-    self.assertTrue(self._tx(self._button_msg(Buttons.RESUME, bus=self.BUTTONS_BUS)))
-    self.assertFalse(self._tx(self._button_msg(Buttons.SET, bus=self.BUTTONS_BUS)))
-
-    for enabled in (True, False):
-      self._rx(self._pcm_status_msg(enabled))
-      self.assertEqual(enabled, self._tx(self._button_msg(Buttons.CANCEL, bus=self.BUTTONS_BUS)))
-
-  def test_enable_control_allowed_from_cruise(self):
-    """
-      Hyundai non-longitudinal only enables on PCM rising edge and recent button press. Tests PCM enabling with:
-      - disallowed: No buttons
-      - disallowed: Buttons that don't enable cruise
-      - allowed: Buttons that do enable cruise
-      - allowed: Main button with all above combinations
-    """
-    for main_button in (0, 1):
-      for btn in range(8):
-        for _ in range(PREV_BUTTON_SAMPLES):  # reset
-          self._rx(self._button_msg(Buttons.NONE))
-
-        self._rx(self._pcm_status_msg(False))
-        self.assertFalse(self.safety.get_controls_allowed())
-        self._rx(self._button_msg(btn, main_button=main_button))
-        self._rx(self._pcm_status_msg(True))
-        controls_allowed = btn in ENABLE_BUTTONS or main_button
-        self.assertEqual(controls_allowed, self.safety.get_controls_allowed())
-
-  def test_sampling_cruise_buttons(self):
-    """
-      Test that we allow controls on recent button press, but not as button leaves sliding window
-    """
-    self._rx(self._button_msg(Buttons.SET))
-    for i in range(2 * PREV_BUTTON_SAMPLES):
-      self._rx(self._pcm_status_msg(False))
-      self.assertFalse(self.safety.get_controls_allowed())
-      self._rx(self._pcm_status_msg(True))
-      controls_allowed = i < PREV_BUTTON_SAMPLES
-      self.assertEqual(controls_allowed, self.safety.get_controls_allowed())
-      self._rx(self._button_msg(Buttons.NONE))
 
 
 class TestHyundaiSafety(HyundaiButtonBase, common.PandaSafetyTest, common.DriverTorqueSteeringSafetyTest):
@@ -128,6 +75,11 @@ class TestHyundaiSafety(HyundaiButtonBase, common.PandaSafetyTest, common.Driver
   RT_INTERVAL = 250000
   DRIVER_TORQUE_ALLOWANCE = 50
   DRIVER_TORQUE_FACTOR = 2
+
+  # Safety around steering req bit
+  MIN_VALID_STEERING_FRAMES = 89
+  MAX_INVALID_STEERING_FRAMES = 2
+  MIN_VALID_STEERING_RT_INTERVAL = 810000  # a ~10% buffer, can send steer up to 110Hz
 
   cnt_gas = 0
   cnt_speed = 0
@@ -177,22 +129,6 @@ class TestHyundaiSafety(HyundaiButtonBase, common.PandaSafetyTest, common.Driver
   def _torque_cmd_msg(self, torque, steer_req=1):
     values = {"CR_Lkas_StrToqReq": torque, "CF_Lkas_ActToi": steer_req}
     return self.packer.make_can_msg_panda("LKAS11", 0, values)
-
-  def test_steer_req_bit(self):
-    """
-      On Hyundai, you can ramp up torque and then set the CF_Lkas_ActToi bit and the
-      EPS will ramp up faster than the effective panda safety limits. This tests:
-        - Nothing is sent when cutting torque
-        - Nothing is blocked when sending torque normally
-    """
-    self.safety.set_controls_allowed(True)
-    for _ in range(100):
-      self._set_prev_torque(self.MAX_TORQUE)
-      self.assertFalse(self._tx(self._torque_cmd_msg(self.MAX_TORQUE, steer_req=0)))
-
-    self._set_prev_torque(self.MAX_TORQUE)
-    for _ in range(100):
-      self.assertTrue(self._tx(self._torque_cmd_msg(self.MAX_TORQUE, steer_req=1)))
 
 
 class TestHyundaiSafetyCameraSCC(TestHyundaiSafety):
