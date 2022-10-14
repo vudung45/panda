@@ -93,9 +93,9 @@ AddrCheckStruct hyundai_non_scc_addr_checks[] = {
 #define HYUNDAI_NON_SCC_ADDR_CHECK_LEN (sizeof(hyundai_non_scc_addr_checks) / sizeof(hyundai_non_scc_addr_checks[0]))
 
 const int HYUNDAI_PARAM_CAMERA_SCC = 8;
-const int HYUNDAI_PARAM_LFA_BTN = 16;
-const int HYUNDAI_PARAM_ESCC = 32;
-const int HYUNDAI_PARAM_NON_SCC = 64;
+const int HYUNDAI_PARAM_LFA_BTN = 32;
+const int HYUNDAI_PARAM_ESCC = 64;
+const int HYUNDAI_PARAM_NON_SCC = 128;
 
 bool hyundai_legacy = false;
 bool hyundai_camera_scc = false;
