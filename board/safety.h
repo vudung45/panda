@@ -282,7 +282,24 @@ void generic_rx_checks(bool stock_ecu_detected) {
 
   // exit controls on rising edge of regen paddle
   if (regen_braking && (!regen_braking_prev || vehicle_moving)) {
-    controls_allowed = 0;
+    if (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE) {
+      disengageFromBrakes = true;
+      controls_allowed_long = 0;
+    } else if (alternative_experience & ALT_EXP_ENABLE_MADS) {
+      if (controls_allowed == 1) {
+        disengageFromBrakes = true;
+      }
+      controls_allowed = 0;
+      controls_allowed_long = 0;
+    } else {
+      controls_allowed = 0;
+      controls_allowed_long = 0;
+    }
+  } else if (!regen_braking && disengageFromBrakes) {
+    disengageFromBrakes = false;
+    if (alternative_experience & ALT_EXP_ENABLE_MADS) {
+      controls_allowed = 1;
+    }
   }
   regen_braking_prev = regen_braking;
 
