@@ -55,8 +55,6 @@ AddrCheckStruct hyundai_canfd_addr_checks[] = {
   {.msg = {{0x1cf, 1, 8, .check_checksum = false, .max_counter = 0xfU, .expected_timestep = 20000U},
            {0x1cf, 0, 8, .check_checksum = false, .max_counter = 0xfU, .expected_timestep = 20000U},
            {0x1aa, 0, 16, .check_checksum = false, .max_counter = 0xffU, .expected_timestep = 20000U}}},
-  {.msg = {{0x1a0, 1, 32, .check_checksum = true, .max_counter = 0xffU, .expected_timestep = 20000U},
-           {0x1a0, 2, 32, .check_checksum = true, .max_counter = 0xffU, .expected_timestep = 20000U}, { 0 }}},
 };
 #define HYUNDAI_CANFD_ADDR_CHECK_LEN (sizeof(hyundai_canfd_addr_checks) / sizeof(hyundai_canfd_addr_checks[0]))
 
@@ -125,7 +123,6 @@ static int hyundai_canfd_rx_hook(CANPacket_t *to_push) {
   int addr = GET_ADDR(to_push);
 
   const int pt_bus = hyundai_canfd_hda2 ? 1 : 0;
-  const int cam_bus = hyundai_canfd_hda2 ? 1 : 2;
 
   if (valid && (bus == pt_bus)) {
     // driver torque
@@ -184,21 +181,6 @@ static int hyundai_canfd_rx_hook(CANPacket_t *to_push) {
         speed += GET_BYTE(to_push, i) | (GET_BYTE(to_push, i + 1) << 8U);
       }
       vehicle_moving = (speed / 4U) > HYUNDAI_STANDSTILL_THRSLD;
-    }
-  }
-
-  if (valid && (bus == cam_bus)) {
-    if (addr == 0x1a0) {
-      int acc_main_on = GET_BIT(to_push, 66U);
-
-      if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
-        controls_allowed = 1;
-      }
-      /**if (!acc_main_on) {
-        disengageFromBrakes = false;
-        controls_allowed = 0;
-        controls_allowed_long = 0;
-      }**/
     }
   }
 
