@@ -232,10 +232,20 @@ static int volkswagen_pq_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed
 
   // FORCE CANCEL: ensuring that only the cancel button press is sent when controls are off.
   // This avoids unintended engagements while still allowing resume spam
-  if ((addr == MSG_GRA_NEU) && !controls_allowed_long) {
+  if (addr == MSG_GRA_NEU) {
     // Signal: GRA_Neu.GRA_Neu_Setzen
     // Signal: GRA_Neu.GRA_Neu_Recall
-    if (GET_BIT(to_send, 16U) || GET_BIT(to_send, 17U)) {
+    /*if (GET_BIT(to_send, 16U) || GET_BIT(to_send, 17U)) {
+      tx = 0;
+    }*/
+    bool is_set_cruise = GET_BIT(to_push, 16U) != 0U;
+    bool is_resume_cruise = GET_BIT(to_push, 17U) != 0U;
+    bool is_accel_cruise = GET_BIT(to_push, 11U) != 0U;
+    bool is_decel_cruise = GET_BIT(to_push, 10U) != 0U;
+    bool is_cancel = GET_BIT(to_push, 9U) != 0U;
+
+    bool allowed = (is_cancel && cruise_engaged_prev) || ((is_set_cruise || is_resume_cruise || is_accel_cruise || is_decel_cruise) && controls_allowed && controls_allowed_long);
+    if (!allowed) {
       tx = 0;
     }
   }
