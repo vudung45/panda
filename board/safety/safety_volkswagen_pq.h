@@ -238,11 +238,11 @@ static int volkswagen_pq_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed
     /*if (GET_BIT(to_send, 16U) || GET_BIT(to_send, 17U)) {
       tx = 0;
     }*/
-    bool is_set_cruise = GET_BIT(to_push, 16U) != 0U;
-    bool is_resume_cruise = GET_BIT(to_push, 17U) != 0U;
-    bool is_accel_cruise = GET_BIT(to_push, 11U) != 0U;
-    bool is_decel_cruise = GET_BIT(to_push, 10U) != 0U;
-    bool is_cancel = GET_BIT(to_push, 9U) != 0U;
+    bool is_set_cruise = GET_BIT(to_send, 16U) != 0U;
+    bool is_resume_cruise = GET_BIT(to_send, 17U) != 0U;
+    bool is_accel_cruise = GET_BIT(to_send, 11U) != 0U;
+    bool is_decel_cruise = GET_BIT(to_send, 10U) != 0U;
+    bool is_cancel = GET_BIT(to_send, 9U) != 0U;
 
     bool allowed = (is_cancel && cruise_engaged_prev) || ((is_set_cruise || is_resume_cruise || is_accel_cruise || is_decel_cruise) && controls_allowed && controls_allowed_long);
     if (!allowed) {
