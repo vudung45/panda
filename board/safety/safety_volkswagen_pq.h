@@ -144,13 +144,14 @@ static int volkswagen_pq_rx_hook(CANPacket_t *to_push) {
         bool resume_button = GET_BIT(to_push, 17U);
         if ((volkswagen_pq_set_prev && !set_button) || (volkswagen_pq_resume_prev && !resume_button)) {
           controls_allowed = acc_main_on;
+          controls_allowed_long = acc_main_on;
         }
         volkswagen_pq_set_prev = set_button;
         volkswagen_pq_resume_prev = resume_button;
         // Exit controls on rising edge of Cancel, override Set/Resume if present simultaneously
         // Signal: GRA_ACC_01.GRA_Abbrechen
         if (GET_BIT(to_push, 9U) == 1U) {
-          controls_allowed = 0;
+          controls_allowed_long = 0;
         }
       }
     } else {
