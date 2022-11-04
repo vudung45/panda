@@ -137,7 +137,6 @@ static int volkswagen_pq_rx_hook(CANPacket_t *to_push) {
         }
       }
 
-    if (volkswagen_pq_longitudinal) {
       if (addr == MSG_GRA_NEU) {
         // If ACC main switch is on, enter controls on falling edge of Set or Resume
         // Signal: GRA_Neu.GRA_Neu_Setzen
