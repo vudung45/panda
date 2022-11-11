@@ -92,13 +92,11 @@ AddrCheckStruct hyundai_non_scc_addr_checks[] = {
 };
 #define HYUNDAI_NON_SCC_ADDR_CHECK_LEN (sizeof(hyundai_non_scc_addr_checks) / sizeof(hyundai_non_scc_addr_checks[0]))
 
-const int HYUNDAI_PARAM_CAMERA_SCC = 8;
-const int HYUNDAI_PARAM_LFA_BTN = 32;
-const int HYUNDAI_PARAM_ESCC = 64;
-const int HYUNDAI_PARAM_NON_SCC = 128;
+const int HYUNDAI_PARAM_LFA_BTN = 64;
+const int HYUNDAI_PARAM_ESCC = 128;
+const int HYUNDAI_PARAM_NON_SCC = 256;
 
 bool hyundai_legacy = false;
-bool hyundai_camera_scc = false;
 bool hyundai_lfa_button = false;
 bool hyundai_escc = false;
 bool hyundai_non_scc = false;
@@ -411,7 +409,6 @@ static int hyundai_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
 static const addr_checks* hyundai_init(uint16_t param) {
   hyundai_common_init(param);
   hyundai_legacy = false;
-  hyundai_camera_scc = GET_FLAG(param, HYUNDAI_PARAM_CAMERA_SCC);
   hyundai_lfa_button = GET_FLAG(param, HYUNDAI_PARAM_LFA_BTN);
   hyundai_escc = GET_FLAG(param, HYUNDAI_PARAM_ESCC);
   hyundai_non_scc = GET_FLAG(param, HYUNDAI_PARAM_NON_SCC);
