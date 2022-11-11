@@ -65,17 +65,17 @@ void hyundai_common_cruise_buttons_check(const int cruise_button, const int main
   }
 
   if (hyundai_longitudinal) {
-    // exit controls on cancel press
-    if (cruise_button == HYUNDAI_BTN_CANCEL) {
-      controls_allowed_long = 0;
-    }
-
     // enter controls on falling edge of resume or set
-    bool set = (cruise_button == HYUNDAI_BTN_NONE) && (cruise_button_prev == HYUNDAI_BTN_SET);
-    bool res = (cruise_button == HYUNDAI_BTN_NONE) && (cruise_button_prev == HYUNDAI_BTN_RESUME);
+    bool set = (cruise_button != HYUNDAI_BTN_SET) && (cruise_button_prev == HYUNDAI_BTN_SET);
+    bool res = (cruise_button != HYUNDAI_BTN_RESUME) && (cruise_button_prev == HYUNDAI_BTN_RESUME);
     if (set || res) {
       controls_allowed = 1;
       controls_allowed_long = 1;
+    }
+
+    // exit controls on cancel press
+    if (cruise_button == HYUNDAI_BTN_CANCEL) {
+      controls_allowed_long = 0;
     }
 
     cruise_button_prev = cruise_button;
