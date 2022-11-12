@@ -78,6 +78,11 @@ void hyundai_common_cruise_buttons_check(const int cruise_button, const int main
       controls_allowed_long = 0;
     }
 
+    // exit controls on cancel press
+    if (cruise_button == HYUNDAI_BTN_CANCEL) {
+      controls_allowed = 0;
+    }
+
     cruise_button_prev = cruise_button;
   }
 }
