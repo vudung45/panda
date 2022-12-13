@@ -66,6 +66,10 @@ can_buffer(tx3_q, 0x1A0)
 // cppcheck-suppress misra-c2012-9.3
 can_ring *can_queues[] = {&can_tx1_q, &can_tx2_q, &can_tx3_q, &can_txgmlan_q};
 
+// helpers
+#define WORD_TO_BYTE_ARRAY(dst8, src32) 0[dst8] = ((src32) & 0xFFU); 1[dst8] = (((src32) >> 8U) & 0xFFU); 2[dst8] = (((src32) >> 16U) & 0xFFU); 3[dst8] = (((src32) >> 24U) & 0xFFU)
+#define BYTE_ARRAY_TO_WORD(dst32, src8) ((dst32) = 0[src8] | (1[src8] << 8U) | (2[src8] << 16U) | (3[src8] << 24U))
+
 // ********************* interrupt safe queue *********************
 bool can_pop(can_ring *q, CANPacket_t *elem) {
   bool ret = 0;
@@ -103,21 +107,21 @@ bool can_push(can_ring *q, CANPacket_t *elem) {
   EXIT_CRITICAL();
   if (!ret) {
     #ifdef DEBUG
-      puts("can_push to ");
+      print("can_push to ");
       if (q == &can_rx_q) {
-        puts("can_rx_q");
+        print("can_rx_q");
       } else if (q == &can_tx1_q) {
-        puts("can_tx1_q");
+        print("can_tx1_q");
       } else if (q == &can_tx2_q) {
-        puts("can_tx2_q");
+        print("can_tx2_q");
       } else if (q == &can_tx3_q) {
-        puts("can_tx3_q");
+        print("can_tx3_q");
       } else if (q == &can_txgmlan_q) {
-        puts("can_txgmlan_q");
+        print("can_txgmlan_q");
       } else {
-        puts("unknown");
+        print("unknown");
       }
-      puts(" failed!\n");
+      print(" failed!\n");
     #endif
   }
   return ret;
@@ -169,7 +173,7 @@ bus_config_t bus_config[] = {
 
 void can_init_all(void) {
   bool ret = true;
-  for (uint8_t i=0U; i < CAN_CNT; i++) {
+  for (uint8_t i=0U; i < PANDA_CAN_CNT; i++) {
     if (!current_board->has_canfd) {
       bus_config[i].can_data_speed = 0U;
     }
@@ -225,7 +229,7 @@ bool can_tx_check_min_slots_free(uint32_t min) {
 void can_send(CANPacket_t *to_push, uint8_t bus_number, bool skip_tx_hook) {
   if (skip_tx_hook || safety_tx_hook(to_push) != 0) {
     uint8_t busnum1 = (bus_number & 0xF);
-    if (busnum1 < BUS_CNT) {
+    if (busnum1 < PANDA_BUS_CNT) {
       // add CAN packet to send queue
       if ((busnum1 == 3U) && (bus_config[3].can_num_lookup == 0xFFU)) {
         gmlan_send_errs += bitbang_gmlan(to_push) ? 0U : 1U;
@@ -236,7 +240,7 @@ void can_send(CANPacket_t *to_push, uint8_t bus_number, bool skip_tx_hook) {
     }
     if (bus_number > 0xF){
       uint8_t busnum2 = ((bus_number >> 4) & 0x0F);
-      if (busnum2 < BUS_CNT) {
+      if (busnum2 < PANDA_BUS_CNT) {
         // add CAN packet to send queue
         if ((busnum2 == 3U) && (bus_config[3].can_num_lookup == 0xFFU)) {
           gmlan_send_errs += bitbang_gmlan(to_push) ? 0U : 1U;

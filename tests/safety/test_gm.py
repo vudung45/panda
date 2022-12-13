@@ -2,7 +2,7 @@
 import unittest
 from typing import Dict, List
 from panda import Panda
-from panda.tests.safety import libpandasafety_py
+from panda.tests.libpanda import libpanda_py
 import panda.tests.safety.common as common
 from panda.tests.safety.common import CANPackerPanda
 
@@ -21,23 +21,20 @@ class GmLongitudinalBase(common.PandaSafetyTest):
 
   def test_set_resume_buttons(self):
     """
-      SET and RESUME enter controls allowed on their falling edge.
+      SET and RESUME enter controls allowed on their falling and rising edges, respectively.
     """
     for btn_prev in range(8):
       for btn_cur in range(8):
-        self._rx(self._button_msg(Buttons.UNPRESS))
-        self.safety.set_controls_allowed(0)
-        for _ in range(10):
+        with self.subTest(btn_prev=btn_prev, btn_cur=btn_cur):
           self._rx(self._button_msg(btn_prev))
-          self.assertFalse(self.safety.get_controls_allowed())
+          self.safety.set_controls_allowed(0)
+          for _ in range(10):
+            self._rx(self._button_msg(btn_cur))
 
-        # should enter controls allowed on falling edge and not transitioning to cancel
-        should_enable = btn_cur != btn_prev and \
-                        btn_cur != Buttons.CANCEL and \
-                        btn_prev in (Buttons.RES_ACCEL, Buttons.DECEL_SET)
-
-        self._rx(self._button_msg(btn_cur))
-        self.assertEqual(should_enable, self.safety.get_controls_allowed())
+          should_enable = btn_cur != Buttons.DECEL_SET and btn_prev == Buttons.DECEL_SET
+          should_enable = should_enable or (btn_cur == Buttons.RES_ACCEL and btn_prev != Buttons.RES_ACCEL)
+          should_enable = should_enable and btn_cur != Buttons.CANCEL
+          self.assertEqual(should_enable, self.safety.get_controls_allowed())
 
   def test_cancel_button(self):
     self.safety.set_controls_allowed(1)
@@ -90,7 +87,7 @@ class TestGmSafetyBase(common.PandaSafetyTest, common.DriverTorqueSteeringSafety
   def setUp(self):
     self.packer = CANPackerPanda("gm_global_a_powertrain_generated")
     self.packer_chassis = CANPackerPanda("gm_global_a_chassis")
-    self.safety = libpandasafety_py.libpandasafety
+    self.safety = libpanda_py.libpanda
     self.safety.set_safety_hooks(Panda.SAFETY_GM, 0)
     self.safety.init_tests()
 
@@ -177,7 +174,7 @@ class TestGmAscmSafety(GmLongitudinalBase, TestGmSafetyBase):
   def setUp(self):
     self.packer = CANPackerPanda("gm_global_a_powertrain_generated")
     self.packer_chassis = CANPackerPanda("gm_global_a_chassis")
-    self.safety = libpandasafety_py.libpandasafety
+    self.safety = libpanda_py.libpanda
     self.safety.set_safety_hooks(Panda.SAFETY_GM, 0)
     self.safety.init_tests()
 
@@ -207,7 +204,7 @@ class TestGmCameraSafety(TestGmCameraSafetyBase):
   def setUp(self):
     self.packer = CANPackerPanda("gm_global_a_powertrain_generated")
     self.packer_chassis = CANPackerPanda("gm_global_a_chassis")
-    self.safety = libpandasafety_py.libpandasafety
+    self.safety = libpanda_py.libpanda
     self.safety.set_safety_hooks(Panda.SAFETY_GM, Panda.FLAG_GM_HW_CAM)
     self.safety.init_tests()
 
@@ -247,7 +244,7 @@ class TestGmCameraLongitudinalSafety(GmLongitudinalBase, TestGmCameraSafetyBase)
   def setUp(self):
     self.packer = CANPackerPanda("gm_global_a_powertrain_generated")
     self.packer_chassis = CANPackerPanda("gm_global_a_chassis")
-    self.safety = libpandasafety_py.libpandasafety
+    self.safety = libpanda_py.libpanda
     self.safety.set_safety_hooks(Panda.SAFETY_GM, Panda.FLAG_GM_HW_CAM | Panda.FLAG_GM_HW_CAM_LONG)
     self.safety.init_tests()
 
