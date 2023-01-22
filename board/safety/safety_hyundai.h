@@ -199,11 +199,12 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
         controls_allowed = 1;
       }
-      if (!acc_main_on) {
+      if (!acc_main_on && acc_main_on_prev) {
         disengageFromBrakes = false;
         controls_allowed = 0;
         controls_allowed_long = 0;
       }
+      acc_main_on_prev = acc_main_on;
     }
     if (addr == 1057) {
       // 2 bits: 13-14
@@ -233,6 +234,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       int main_button = GET_BIT(to_push, 3U);
       int main_button_prev = 0;
       bool main_enabled = false;
+      bool main_enabled_prev = false;
       hyundai_common_cruise_buttons_check(cruise_button, main_button);
 
       if (hyundai_longitudinal) {
@@ -242,13 +244,14 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
           if (main_enabled && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
             controls_allowed = 1;
           }
-          if (!main_enabled) {
+          if (!main_enabled && main_enabled_prev) {
             disengageFromBrakes = false;
             controls_allowed = 0;
             controls_allowed_long = 0;
           }
         }
         main_button_prev = main_button;
+        main_enabled_prev = main_enabled;
       }
     }
 
@@ -271,11 +274,12 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
         if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
           controls_allowed = 1;
         }
-        if (!acc_main_on) {
+        if (!acc_main_on && acc_main_on_prev) {
           disengageFromBrakes = false;
           controls_allowed = 0;
           controls_allowed_long = 0;
         }
+        acc_main_on_prev = acc_main_on;
       }
     }
 

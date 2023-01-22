@@ -160,11 +160,12 @@ static int volkswagen_mqb_rx_hook(CANPacket_t *to_push) {
         controls_allowed = true;
       }
 
-      if (!acc_main_on) {
+      if (!acc_main_on && acc_main_on_prev) {
         disengageFromBrakes = false;
         controls_allowed = false;
         controls_allowed_long = false;
       }
+      acc_main_on_prev = acc_main_on;
     }
 
     if (addr == MSG_GRA_ACC_01) {

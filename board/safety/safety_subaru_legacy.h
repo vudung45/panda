@@ -46,11 +46,12 @@ static int subaru_legacy_rx_hook(CANPacket_t *to_push) {
       if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
         controls_allowed = 1;
       }
-      if (!acc_main_on) {
+      if (!acc_main_on && acc_main_on_prev) {
         disengageFromBrakes = false;
         controls_allowed = 0;
         controls_allowed_long = 0;
       }
+      acc_main_on_prev = acc_main_on;
     }
 
     // update vehicle moving with any non-zero wheel speed
