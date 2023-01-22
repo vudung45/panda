@@ -82,6 +82,24 @@ static int nissan_rx_hook(CANPacket_t *to_push) {
       pcm_cruise_check(cruise_engaged);
     }
 
+    if (((addr == 0x1B6) && (((bus == 2) && (!nissan_alt_eps)) && ((bus == 1) && (nissan_alt_eps)))) || ((addr == 0x239) && (bus == 0))) {
+      if ((addr == 0x1B6) && (((bus == 2) && (!nissan_alt_eps)) && ((bus == 1) && (nissan_alt_eps)))) {
+        acc_main_on = GET_BIT(to_push, 36U) != 0U;
+      }
+      if ((addr == 0x239) && (bus == 0)) {
+        acc_main_on = GET_BIT(to_push, 17U) != 0U;
+      }
+      if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+        controls_allowed = 1;
+      }
+      if (!acc_main_on && acc_main_on_prev) {
+        disengageFromBrakes = false;
+        controls_allowed = 0;
+        controls_allowed_long = 0;
+      }
+      acc_main_on_prev = acc_main_on;
+    }
+
     generic_rx_checks((addr == 0x169) && (bus == 0));
   }
   return valid;

@@ -53,6 +53,17 @@ static int mazda_rx_hook(CANPacket_t *to_push) {
     if (addr == MAZDA_CRZ_CTRL) {
       bool cruise_engaged = GET_BYTE(to_push, 0) & 0x8U;
       pcm_cruise_check(cruise_engaged);
+
+      acc_main_on = GET_BIT(to_push, 17U) != 0U;
+      if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+        controls_allowed = 1;
+      }
+      if (!acc_main_on && acc_main_on_prev) {
+        disengageFromBrakes = false;
+        controls_allowed = 0;
+        controls_allowed_long = 0;
+      }
+      acc_main_on_prev = acc_main_on;
     }
 
     if (addr == MAZDA_ENGINE_DATA) {
