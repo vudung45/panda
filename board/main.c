@@ -206,7 +206,7 @@ void tick_handler(void) {
       }
 
       // exit controls allowed if unused by openpilot for a few seconds
-      if (controls_allowed && !disengageFromBrakes && !(heartbeat_engaged || ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE)))) {
+      if (controls_allowed && !disengageFromBrakes && !(heartbeat_engaged || mads_enabled)) {
         heartbeat_engaged_mismatches += 1U;
         if (heartbeat_engaged_mismatches >= 3U) {
           disengageFromBrakes = false;

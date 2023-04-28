@@ -196,7 +196,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
     if (!hyundai_longitudinal && (addr == 1056)) {
       acc_main_on = GET_BIT(to_push, 0U);
       // ACC main state
-      if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+      if (acc_main_on && mads_enabled) {
         controls_allowed = 1;
       }
       if (!acc_main_on && acc_main_on_prev) {
@@ -222,7 +222,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
 
     if (addr == 913) {
       bool lfa_pressed = (GET_BYTES_04(to_push) >> 4) & 0x1; // LFA_PRESSED signal
-      if (lfa_pressed && !lfa_pressed_prev && hyundai_lfa_button && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+      if (lfa_pressed && !lfa_pressed_prev && hyundai_lfa_button && mads_enabled) {
         controls_allowed = 1;
       }
       lfa_pressed_prev = lfa_pressed;
@@ -241,7 +241,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
         // enter controls on rising edge of main
         if (main_button && !main_button_prev) {
           main_enabled = !main_enabled;
-          if (main_enabled && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+          if (main_enabled && mads_enabled) {
             controls_allowed = 1;
           }
           if (!main_enabled && main_enabled_prev) {
@@ -271,7 +271,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
 
       if (addr == 608) {
         acc_main_on = GET_BIT(to_push, 25U); // CRUISE_LAMP_M signal
-        if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+        if (acc_main_on && mads_enabled) {
           controls_allowed = 1;
         }
         if (!acc_main_on && acc_main_on_prev) {

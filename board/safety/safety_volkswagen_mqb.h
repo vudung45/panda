@@ -156,7 +156,7 @@ static int volkswagen_mqb_rx_hook(CANPacket_t *to_push) {
         pcm_cruise_check(cruise_engaged);
       }
 
-      if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+      if (acc_main_on && mads_enabled) {
         controls_allowed = true;
       }
 

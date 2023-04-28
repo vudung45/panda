@@ -100,7 +100,7 @@ static int nissan_rx_hook(CANPacket_t *to_push) {
       if ((addr == 0x239) && (bus == 0)) {
         acc_main_on = GET_BIT(to_push, 17U) != 0U;
       }
-      if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+      if (acc_main_on && mads_enabled) {
         controls_allowed = 1;
       }
       if (!acc_main_on && acc_main_on_prev) {

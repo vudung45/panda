@@ -84,7 +84,7 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
     int addr = GET_ADDR(to_push);
     if ((addr == 0x412) && !toyota_mads_lta_msg) {
       bool set_me = (GET_BYTE(to_push, 0) & 0xC0) > 0; // LKAS_HUD
-      if (set_me && !set_me_prev && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+      if (set_me && !set_me_prev && mads_enabled) {
         controls_allowed = 1;
       }
       set_me_prev = set_me;
@@ -92,7 +92,7 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
 
     if ((addr == 0x412) && toyota_mads_lta_msg) {
       bool set_me = (GET_BYTE(to_push, 3) & 0x40) > 0; // LDA_ON_MESSAGE
-      if (set_me && !set_me_prev && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+      if (set_me && !set_me_prev && mads_enabled) {
         controls_allowed = 1;
       }
       set_me_prev = set_me;
@@ -131,7 +131,7 @@ static int toyota_rx_hook(CANPacket_t *to_push) {
 
     if (addr == 0x1D3) {
       acc_main_on = GET_BIT(to_push, 15U) != 0U;
-      if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+      if (acc_main_on && mads_enabled) {
         controls_allowed = 1;
       }
       if (!acc_main_on && acc_main_on_prev) {

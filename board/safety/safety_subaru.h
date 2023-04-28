@@ -102,7 +102,7 @@ static int subaru_rx_hook(CANPacket_t *to_push) {
 
     if ((addr == 0x322) && (bus == 2)) {
       bool lkas_pressed = (GET_BYTE(to_push, 2) & 0x0C) > 0; // LKAS_Dash_State signal
-      if (lkas_pressed && !lkas_pressed_prev && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+      if (lkas_pressed && !lkas_pressed_prev && mads_enabled) {
         controls_allowed = 1;
       }
       lkas_pressed_prev = lkas_pressed;
@@ -114,7 +114,7 @@ static int subaru_rx_hook(CANPacket_t *to_push) {
       pcm_cruise_check(cruise_engaged);
 
       acc_main_on = GET_BIT(to_push, 40U) != 0U;
-      if (acc_main_on && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+      if (acc_main_on && mads_enabled) {
         controls_allowed = 1;
       }
       if (!acc_main_on && acc_main_on_prev) {

@@ -235,6 +235,8 @@ struct sample_t angle_meas;         // last 6 steer angles
 
 int alternative_experience = 0;
 
+bool mads_enabled = false;
+
 // time since safety mode has been changed
 uint32_t safety_mode_cnt = 0U;
 // allow 1s of transition timeout after relay changes state before assessing malfunctioning

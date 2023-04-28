@@ -254,6 +254,9 @@ bool addr_safety_check(CANPacket_t *to_push,
 }
 
 void generic_rx_checks(bool stock_ecu_detected) {
+  mads_enabled = (alternative_experience & ALT_EXP_ENABLE_MADS) ||
+                 (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE);
+
   // exit controls on rising edge of gas press
   if (gas_pressed && !gas_pressed_prev && !(alternative_experience & ALT_EXP_DISABLE_DISENGAGE_ON_GAS)) {
     disengageFromBrakes = false;

@@ -200,7 +200,7 @@ static int hyundai_canfd_rx_hook(CANPacket_t *to_push) {
       }
       hyundai_common_cruise_buttons_check(cruise_button, main_button);
 
-      if (lfa_pressed && !lfa_pressed_prev && ((alternative_experience & ALT_EXP_ENABLE_MADS) || (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE))) {
+      if (lfa_pressed && !lfa_pressed_prev && mads_enabled) {
         controls_allowed = 1;
       }
       lfa_pressed_prev = lfa_pressed;
