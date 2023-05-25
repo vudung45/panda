@@ -221,7 +221,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
     }
 
     if (addr == 913) {
-      bool lfa_pressed = (GET_BYTES_04(to_push) >> 4) & 0x1; // LFA_PRESSED signal
+      bool lfa_pressed = GET_BIT(to_push, 4U); // LFA_PRESSED signal
       if (lfa_pressed && !lfa_pressed_prev && hyundai_lfa_button && mads_enabled) {
         controls_allowed = 1;
       }
