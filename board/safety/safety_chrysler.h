@@ -36,7 +36,10 @@ typedef struct {
   const int DAS_3;
   const int DAS_6;
   const int LKAS_COMMAND;
+  const int LKAS_HEARTBIT;
   const int CRUISE_BUTTONS;
+  const int CENTER_STACK_1;
+  const int CENTER_STACK_2;
 } ChryslerAddrs;
 
 // CAN messages for Chrysler/Jeep platforms
@@ -48,7 +51,10 @@ const ChryslerAddrs CHRYSLER_ADDRS = {
   .DAS_3            = 500,  // ACC engagement states from DASM
   .DAS_6            = 678,  // LKAS HUD and auto headlight control from DASM
   .LKAS_COMMAND     = 658,  // LKAS controls from DASM
+  .LKAS_HEARTBIT    = 729,  // LKAS HEARTBIT from DASM
   .CRUISE_BUTTONS   = 571,  // Cruise control buttons
+  .CENTER_STACK_1   = 816,  // LKAS Button
+  .CENTER_STACK_2   = 650,  // LKAS Button
 };
 
 // CAN messages for the 5th gen RAM DT platform
@@ -61,6 +67,8 @@ const ChryslerAddrs CHRYSLER_RAM_DT_ADDRS = {
   .DAS_6            = 250,  // LKAS HUD and auto headlight control from DASM
   .LKAS_COMMAND     = 166,  // LKAS controls from DASM
   .CRUISE_BUTTONS   = 177,  // Cruise control buttons
+  .CENTER_STACK_1   = 221,  // LKAS Button
+  .CENTER_STACK_2   = 650,  // LKAS Button
 };
 
 // CAN messages for the 5th gen RAM HD platform
@@ -73,12 +81,15 @@ const ChryslerAddrs CHRYSLER_RAM_HD_ADDRS = {
   .DAS_6            = 629,  // LKAS HUD and auto headlight control from DASM
   .LKAS_COMMAND     = 630,  // LKAS controls from DASM
   .CRUISE_BUTTONS   = 570,  // Cruise control buttons
+  .CENTER_STACK_1   = 816,  // LKAS Button
+  .CENTER_STACK_2   = 650,  // LKAS Button
 };
 
 const CanMsg CHRYSLER_TX_MSGS[] = {
   {CHRYSLER_ADDRS.CRUISE_BUTTONS, 0, 3},
   {CHRYSLER_ADDRS.LKAS_COMMAND, 0, 6},
   {CHRYSLER_ADDRS.DAS_6, 0, 8},
+  {CHRYSLER_ADDRS.LKAS_HEARTBIT, 0, 5},
 };
 
 const CanMsg CHRYSLER_RAM_DT_TX_MSGS[] = {
@@ -284,8 +295,8 @@ static int chrysler_fwd_hook(int bus_num, int addr) {
     bus_fwd = 2;
   }
 
-  // forward all messages from camera except LKAS messages
-  const bool is_lkas = ((addr == chrysler_addrs->LKAS_COMMAND) || (addr == chrysler_addrs->DAS_6));
+  // forward all messages from camera except LKAS messages and HeartBit
+  const bool is_lkas = ((addr == chrysler_addrs->LKAS_COMMAND) || (addr == chrysler_addrs->DAS_6) || (addr == chrysler_addrs->LKAS_HEARTBIT));
   if ((bus_num == 2) && !is_lkas){
     bus_fwd = 0;
   }
