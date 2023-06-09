@@ -106,7 +106,12 @@ static int mazda_tx_hook(CANPacket_t *to_send) {
       // allow resume spamming while controls allowed, but
       // only allow cancel while contrls not allowed
       bool cancel_cmd = (GET_BYTE(to_send, 0) == 0x1U);
-      if (!(controls_allowed && controls_allowed_long) && !cancel_cmd) {
+      bool resume_cmd = GET_BIT(to_send, 2) != 0U;
+      bool inc_cmd = GET_BIT(to_send, 4) != 0U;
+      bool dec_cmd = GET_BIT(to_send, 5) != 0U;
+
+      bool allowed = cancel_cmd || ((resume_cmd || inc_cmd || dec_cmd) && controls_allowed && controls_allowed_long);
+      if (!allowed) {
         tx = 0;
       }
     }

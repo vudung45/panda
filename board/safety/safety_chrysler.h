@@ -278,7 +278,9 @@ static int chrysler_tx_hook(CANPacket_t *to_send) {
   if (addr == chrysler_addrs->CRUISE_BUTTONS) {
     const bool is_cancel = GET_BYTE(to_send, 0) == 1U;
     const bool is_resume = GET_BYTE(to_send, 0) == 0x10U;
-    const bool allowed = is_cancel || (is_resume && controls_allowed && controls_allowed_long);
+    const bool is_accel = GET_BIT(to_send, 2);
+    const bool is_decel = GET_BIT(to_send, 3);
+    const bool allowed = is_cancel || ((is_resume || is_accel || is_decel) && controls_allowed && controls_allowed_long);
     if (!allowed) {
       tx = 0;
     }
