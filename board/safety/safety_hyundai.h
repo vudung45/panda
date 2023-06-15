@@ -51,6 +51,18 @@ const CanMsg HYUNDAI_CAMERA_SCC_TX_MSGS[] = {
   {1157, 0, 4}, // LFAHDA_MFC Bus 0
 };
 
+const CanMsg HYUNDAI_CAMERA_SCC_LONG_TX_MSGS[] = {
+  {832, 0, 8},  // LKAS11 Bus 0
+  {1265, 2, 4}, // CLU11 Bus 2
+  {1157, 0, 4}, // LFAHDA_MFC Bus 0
+  {1056, 0, 8}, // SCC11 Bus 0
+  {1057, 0, 8}, // SCC12 Bus 0
+  {1290, 0, 8}, // SCC13 Bus 0
+  {905, 0, 8},  // SCC14 Bus 0
+  {909, 0, 8},  // FCA11 Bus 0
+  {1155, 0, 8}, // FCA12 Bus 0
+};
+
 AddrCheckStruct hyundai_addr_checks[] = {
   {.msg = {{608, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
            {881, 0, 8, .expected_timestep = 10000U}, { 0 }}},
@@ -306,7 +318,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
 
     bool stock_ecu_detected = (addr == 832);
 
-    // If openpilot is controlling longitudinal we need to ensure the radar is turned off
+    // If openpilot is controlling longitudinal we need to ensure the radar is turned off on non-camera SCC cars
     // Enforce by checking we don't see SCC12
     if (hyundai_longitudinal && (addr == 1057)) {
       stock_ecu_detected = true;
@@ -321,9 +333,11 @@ static int hyundai_tx_hook(CANPacket_t *to_send) {
   int tx = 1;
   int addr = GET_ADDR(to_send);
 
-  if (hyundai_longitudinal) {
+  if (hyundai_longitudinal && hyundai_camera_scc) {
+    tx = msg_allowed(to_send, HYUNDAI_CAMERA_SCC_LONG_TX_MSGS, sizeof(HYUNDAI_CAMERA_SCC_LONG_TX_MSGS)/sizeof(HYUNDAI_CAMERA_SCC_LONG_TX_MSGS[0]));
+  } else if (hyundai_longitudinal) {
     tx = msg_allowed(to_send, HYUNDAI_LONG_TX_MSGS, sizeof(HYUNDAI_LONG_TX_MSGS)/sizeof(HYUNDAI_LONG_TX_MSGS[0]));
-  } else if (hyundai_camera_scc) {
+  } else if (!hyundai_longitudinal && hyundai_camera_scc) {
     tx = msg_allowed(to_send, HYUNDAI_CAMERA_SCC_TX_MSGS, sizeof(HYUNDAI_CAMERA_SCC_TX_MSGS)/sizeof(HYUNDAI_CAMERA_SCC_TX_MSGS[0]));
   } else {
     tx = msg_allowed(to_send, HYUNDAI_TX_MSGS, sizeof(HYUNDAI_TX_MSGS)/sizeof(HYUNDAI_TX_MSGS[0]));
@@ -374,7 +388,7 @@ static int hyundai_tx_hook(CANPacket_t *to_send) {
   }
 
   // UDS: Only tester present ("\x02\x3E\x80\x00\x00\x00\x00\x00") allowed on diagnostics address
-  if ((addr == 2000) && !hyundai_escc) {
+  if ((addr == 2000) && !hyundai_escc && !hyundai_camera_scc) {
     if ((GET_BYTES(to_send, 0, 4) != 0x00803E02U) || (GET_BYTES(to_send, 4, 4) != 0x0U)) {
       tx = 0;
     }
@@ -403,8 +417,16 @@ static int hyundai_fwd_hook(int bus_num, int addr) {
   if (bus_num == 0) {
     bus_fwd = 2;
   }
-  if ((bus_num == 2) && (addr != 832) && (addr != 1157)) {
-    bus_fwd = 0;
+  if (bus_num == 2) {
+    int is_lkas11_msg = (addr == 832);
+    int is_lfahda_mfc_msg = (addr == 1157);
+    int is_scc_msg = (addr == 1056) || (addr == 1057) || (addr == 1290) || (addr == 905);
+    int is_fca_msg = (addr == 909) || (addr == 1155);
+
+    int block_msg = is_lkas11_msg || is_lfahda_mfc_msg || ((is_scc_msg || is_fca_msg) && hyundai_longitudinal);
+    if (!block_msg) {
+      bus_fwd = 0;
+    }
   }
 
   return bus_fwd;
@@ -416,10 +438,6 @@ static const addr_checks* hyundai_init(uint16_t param) {
   hyundai_lfa_button = GET_FLAG(param, HYUNDAI_PARAM_LFA_BTN);
   hyundai_escc = GET_FLAG(param, HYUNDAI_PARAM_ESCC);
   hyundai_non_scc = GET_FLAG(param, HYUNDAI_PARAM_NON_SCC);
-
-  if (hyundai_camera_scc) {
-    hyundai_longitudinal = false;
-  }
 
   if (hyundai_longitudinal) {
     hyundai_rx_checks = (addr_checks){hyundai_long_addr_checks, HYUNDAI_LONG_ADDR_CHECK_LEN};
