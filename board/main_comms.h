@@ -430,11 +430,6 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
         heartbeat_engaged = (req->param1 == 1U);
         break;
       }
-    case 0xff:
-      {
-        heartbeat_parked = (req->param1 == 1U);
-        break;
-      }
     // **** 0xf4: k-line/l-line 5 baud initialization
     case 0xf4:
       if(current_board->has_lin) {

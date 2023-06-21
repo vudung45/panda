@@ -220,7 +220,6 @@ uint32_t ts_steer_req_mismatch_last = 0;  // last timestamp steer req was mismat
 // state for controls_allowed timeout logic
 bool heartbeat_engaged = false;             // openpilot enabled, passed in heartbeat USB command
 uint32_t heartbeat_engaged_mismatches = 0;  // count of mismatches between heartbeat_engaged and controls_allowed
-bool heartbeat_parked = false;
 
 // for safety modes with angle steering control
 uint32_t ts_angle_last = 0;
