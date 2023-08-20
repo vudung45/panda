@@ -198,8 +198,6 @@ bool regen_braking = false;
 bool regen_braking_prev = false;
 bool cruise_engaged_prev = false;
 bool acc_main_on_prev = false;
-bool lfa_pressed_prev = false;
-bool set_me_prev = false;
 bool lkas_pressed_prev = false;
 struct sample_t vehicle_speed;
 bool vehicle_moving = false;

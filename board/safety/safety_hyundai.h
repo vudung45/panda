@@ -207,16 +207,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
     // ACC main state
     if (!hyundai_longitudinal && (addr == 1056)) {
       acc_main_on = GET_BIT(to_push, 0U);
-      // ACC main state
-      if (acc_main_on && mads_enabled) {
-        controls_allowed = 1;
-      }
-      if (!acc_main_on && acc_main_on_prev) {
-        disengageFromBrakes = false;
-        controls_allowed = 0;
-        controls_allowed_long = 0;
-      }
-      acc_main_on_prev = acc_main_on;
+      mads_acc_main_check(acc_main_on);
     }
     if (addr == 1057) {
       // 2 bits: 13-14
@@ -232,12 +223,9 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       update_sample(&torque_driver, torque_driver_new);
     }
 
-    if (addr == 913) {
+    if ((addr == 913) && hyundai_lfa_button && mads_enabled) {
       bool lfa_pressed = GET_BIT(to_push, 4U); // LFA_PRESSED signal
-      if (lfa_pressed && !lfa_pressed_prev && hyundai_lfa_button && mads_enabled) {
-        controls_allowed = 1;
-      }
-      lfa_pressed_prev = lfa_pressed;
+      mads_lkas_button_check(lfa_pressed);
     }
 
     // ACC steering wheel buttons
@@ -249,6 +237,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       bool main_enabled_prev = false;
       hyundai_common_cruise_buttons_check(cruise_button, main_button);
 
+      // TODO: Refactor this method at a later time
       if (hyundai_longitudinal) {
         // enter controls on rising edge of main
         if (main_button && !main_button_prev) {
@@ -270,28 +259,12 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
     if (hyundai_non_scc) {
       if (addr == 871) {
         bool cruise_engaged = GET_BYTE(to_push, 0) != 0U; // CF_Lvr_CruiseSet signal
-        if (cruise_engaged && !cruise_engaged_prev) {
-          controls_allowed = 1;
-          controls_allowed_long = 1;
-        }
-
-        if (!cruise_engaged) {
-          controls_allowed_long = 0;
-        }
-        cruise_engaged_prev = cruise_engaged;
+        hyundai_common_cruise_state_check(cruise_engaged);
       }
 
       if (addr == 608) {
         acc_main_on = GET_BIT(to_push, 25U); // CRUISE_LAMP_M signal
-        if (acc_main_on && mads_enabled) {
-          controls_allowed = 1;
-        }
-        if (!acc_main_on && acc_main_on_prev) {
-          disengageFromBrakes = false;
-          controls_allowed = 0;
-          controls_allowed_long = 0;
-        }
-        acc_main_on_prev = acc_main_on;
+        mads_acc_main_check(acc_main_on);
       }
     }
 

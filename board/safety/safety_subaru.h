@@ -112,12 +112,9 @@ static int subaru_rx_hook(CANPacket_t *to_push) {
       update_sample(&torque_driver, torque_driver_new);
     }
 
-    if ((addr == MSG_SUBARU_ES_LKAS_State) && (bus == SUBARU_CAM_BUS)) {
+    if ((addr == MSG_SUBARU_ES_LKAS_State) && (bus == SUBARU_CAM_BUS) && mads_enabled) {
       bool lkas_pressed = (GET_BYTE(to_push, 2) & 0x0C) > 0; // LKAS_Dash_State signal
-      if (lkas_pressed && !lkas_pressed_prev && mads_enabled) {
-        controls_allowed = 1;
-      }
-      lkas_pressed_prev = lkas_pressed;
+      mads_lkas_button_check(lkas_pressed);
     }
 
     // enter controls on rising edge of ACC, exit controls on ACC off
@@ -126,15 +123,7 @@ static int subaru_rx_hook(CANPacket_t *to_push) {
       pcm_cruise_check(cruise_engaged);
 
       acc_main_on = GET_BIT(to_push, 40U) != 0U;
-      if (acc_main_on && mads_enabled) {
-        controls_allowed = 1;
-      }
-      if (!acc_main_on && acc_main_on_prev) {
-        disengageFromBrakes = false;
-        controls_allowed = 0;
-        controls_allowed_long = 0;
-      }
-      acc_main_on_prev = acc_main_on;
+      mads_acc_main_check(acc_main_on);
     }
 
     // update vehicle moving with any non-zero wheel speed

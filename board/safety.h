@@ -1,6 +1,8 @@
 #include "safety_declarations.h"
 #include "can_definitions.h"
 
+#include "safety_sunnypilot_common.h"
+
 // include the safety policies.
 #include "safety/safety_defaults.h"
 #include "safety/safety_honda.h"
@@ -269,47 +271,17 @@ void generic_rx_checks(bool stock_ecu_detected) {
 
   // exit controls on rising edge of brake press
   if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
-    if (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE) {
-      disengageFromBrakes = true;
-      controls_allowed_long = 0;
-    } else if (alternative_experience & ALT_EXP_ENABLE_MADS) {
-      if (controls_allowed == 1) {
-        disengageFromBrakes = true;
-      }
-      controls_allowed = 0;
-      controls_allowed_long = 0;
-    } else {
-      controls_allowed = 0;
-      controls_allowed_long = 0;
-    }
+    mads_exit_controls_check();
   } else if (!brake_pressed && disengageFromBrakes) {
-    disengageFromBrakes = false;
-    if (alternative_experience & ALT_EXP_ENABLE_MADS) {
-      controls_allowed = 1;
-    }
+    mads_resume_controls_check();
   }
   brake_pressed_prev = brake_pressed;
 
   // exit controls on rising edge of regen paddle
   if (regen_braking && (!regen_braking_prev || vehicle_moving)) {
-    if (alternative_experience & ALT_EXP_MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE) {
-      disengageFromBrakes = true;
-      controls_allowed_long = 0;
-    } else if (alternative_experience & ALT_EXP_ENABLE_MADS) {
-      if (controls_allowed == 1) {
-        disengageFromBrakes = true;
-      }
-      controls_allowed = 0;
-      controls_allowed_long = 0;
-    } else {
-      controls_allowed = 0;
-      controls_allowed_long = 0;
-    }
+    mads_exit_controls_check();
   } else if (!regen_braking && disengageFromBrakes) {
-    disengageFromBrakes = false;
-    if (alternative_experience & ALT_EXP_ENABLE_MADS) {
-      controls_allowed = 1;
-    }
+    mads_resume_controls_check();
   }
   regen_braking_prev = regen_braking;
 
