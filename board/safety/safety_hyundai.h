@@ -52,15 +52,15 @@ const CanMsg HYUNDAI_CAMERA_SCC_TX_MSGS[] = {
 };
 
 const CanMsg HYUNDAI_CAMERA_SCC_LONG_TX_MSGS[] = {
-  {832, 0, 8},  // LKAS11 Bus 0
-  {1265, 2, 4}, // CLU11 Bus 2
-  {1157, 0, 4}, // LFAHDA_MFC Bus 0
-  {1056, 0, 8}, // SCC11 Bus 0
-  {1057, 0, 8}, // SCC12 Bus 0
-  {1290, 0, 8}, // SCC13 Bus 0
-  {905, 0, 8},  // SCC14 Bus 0
-  {909, 0, 8},  // FCA11 Bus 0
-  {1155, 0, 8}, // FCA12 Bus 0
+  {0x340, 0, 8}, // LKAS11 Bus 0
+  {0x4F1, 2, 4}, // CLU11 Bus 2
+  {0x485, 0, 4}, // LFAHDA_MFC Bus 0
+  {0x420, 0, 8}, // SCC11 Bus 0
+  {0x421, 0, 8}, // SCC12 Bus 0
+  {0x50A, 0, 8}, // SCC13 Bus 0
+  {0x389, 0, 8}, // SCC14 Bus 0
+  {0x38D, 0, 8}, // FCA11 Bus 0
+  {0x7D0, 0, 8}, // FCA12 Bus 0
 };
 
 AddrCheckStruct hyundai_addr_checks[] = {
@@ -101,10 +101,10 @@ AddrCheckStruct hyundai_legacy_addr_checks[] = {
 #define HYUNDAI_LEGACY_ADDR_CHECK_LEN (sizeof(hyundai_legacy_addr_checks) / sizeof(hyundai_legacy_addr_checks[0]))
 
 AddrCheckStruct hyundai_non_scc_addr_checks[] = {
-  {.msg = {{608, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
-           {881, 0, 8, .expected_timestep = 10000U}, { 0 }}},
-  {.msg = {{871, 0, 8, .expected_timestep = 10000U}, { 0 }, { 0 }}},
-  {.msg = {{902, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
+  {.msg = {{0x260, 0, 8, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
+           {0x371, 0, 8, .expected_timestep = 10000U}, { 0 }}},
+  {.msg = {{0x367, 0, 8, .expected_timestep = 10000U}, { 0 }, { 0 }}},
+  {.msg = {{0x386, 0, 8, .check_checksum = true, .max_counter = 15U, .expected_timestep = 10000U}, { 0 }, { 0 }}},
 };
 #define HYUNDAI_NON_SCC_ADDR_CHECK_LEN (sizeof(hyundai_non_scc_addr_checks) / sizeof(hyundai_non_scc_addr_checks[0]))
 
@@ -223,7 +223,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       update_sample(&torque_driver, torque_driver_new);
     }
 
-    if ((addr == 913) && hyundai_lfa_button && mads_enabled) {
+    if ((addr == 0x391) && hyundai_lfa_button && mads_enabled) {
       bool lfa_pressed = GET_BIT(to_push, 4U); // LFA_PRESSED signal
       mads_lkas_button_check(lfa_pressed);
     }
@@ -257,12 +257,12 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
     }
 
     if (hyundai_non_scc) {
-      if (addr == 871) {
+      if (addr == 0x367) {
         bool cruise_engaged = GET_BYTE(to_push, 0) != 0U; // CF_Lvr_CruiseSet signal
         hyundai_common_cruise_state_check(cruise_engaged);
       }
 
-      if (addr == 608) {
+      if (addr == 0x260) {
         acc_main_on = GET_BIT(to_push, 25U); // CRUISE_LAMP_M signal
         mads_acc_main_check(acc_main_on);
       }
