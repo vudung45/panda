@@ -214,7 +214,7 @@ static int subaru_tx_hook(CANPacket_t *to_send) {
 
     bool steer_req = GET_BIT(to_send, 29U) != 0U;
 
-    const SteeringLimits limits = subaru_gen2 ? SUBARU_GEN2_STEERING_LIMITS : SUBARU_STEERING_LIMITS :
+    const SteeringLimits limits = subaru_gen2 ? SUBARU_GEN2_STEERING_LIMITS :
                                   subaru_max_steer_2018_crosstrek ? SUBARU_STEERING_LIMITS_ALT : SUBARU_STEERING_LIMITS;
     violation |= steer_torque_cmd_checks(desired_torque, steer_req, limits);
   }
