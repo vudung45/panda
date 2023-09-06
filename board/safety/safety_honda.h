@@ -153,7 +153,7 @@ static int honda_rx_hook(CANPacket_t *to_push) {
       // enter controls on the falling edge of set or resume
       bool set = (button != HONDA_BTN_SET) && (cruise_button_prev == HONDA_BTN_SET);
       bool res = (button != HONDA_BTN_RESUME) && (cruise_button_prev == HONDA_BTN_RESUME);
-      if (acc_main_on && !pcm_cruise && (set || res)) {
+      if (acc_main_on && (set || res)) {
         controls_allowed = true;
         controls_allowed_long = true;
       }
