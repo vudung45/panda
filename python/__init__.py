@@ -196,6 +196,9 @@ class Panda:
   FLAG_TOYOTA_STOCK_LONGITUDINAL = (2 << 8)
   FLAG_TOYOTA_LTA = (4 << 8)
 
+  FLAG_TOYOTA_MADS_LTA_MSG = (128 << 8)
+  FLAG_TOYOTA_UNSUPPORTED_DSU_CAR = (256 << 8)
+
   FLAG_HONDA_ALT_BRAKE = 1
   FLAG_HONDA_BOSCH_LONG = 2
   FLAG_HONDA_NIDEC_ALT = 4
@@ -237,8 +240,6 @@ class Panda:
 
   FLAG_FORD_LONG_CONTROL = 1
   FLAG_FORD_CANFD = 2
-
-  FLAG_TOYOTA_MADS_LTA_MSG = 1
 
   def __init__(self, serial: Optional[str] = None, claim: bool = True, disable_checks: bool = True):
     self._connect_serial = serial
