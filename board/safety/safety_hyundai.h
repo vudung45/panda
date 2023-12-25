@@ -310,7 +310,7 @@ static int hyundai_tx_hook(CANPacket_t *to_send) {
   }
 
   // FCA11: Block any potential actuation
-  if ((addr == 0x38D) && !hyundai_escc) {
+  if (addr == 0x38D) {
     int CR_VSM_DecCmd = GET_BYTE(to_send, 1);
     int FCA_CmdAct = GET_BIT(to_send, 20U);
     int CF_VSM_DecCmdAct = GET_BIT(to_send, 31U);
