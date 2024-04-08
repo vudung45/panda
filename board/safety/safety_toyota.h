@@ -102,7 +102,7 @@ const uint32_t TOYOTA_PARAM_STOCK_LONGITUDINAL = 2UL << TOYOTA_PARAM_OFFSET;
 const uint32_t TOYOTA_PARAM_LTA = 4UL << TOYOTA_PARAM_OFFSET;
 const uint32_t TOYOTA_PARAM_GAS_INTERCEPTOR = 8UL << TOYOTA_PARAM_OFFSET;
 
-const uint32_t TOYOTA_PARAM_MADS_LTA_MSG = 64U << TOYOTA_PARAM_OFFSET;
+const uint32_t TOYOTA_PARAM_SDSU = 64U << TOYOTA_PARAM_OFFSET;
 const uint32_t TOYOTA_PARAM_UNSUPPORTED_DSU_CAR = 128U << TOYOTA_PARAM_OFFSET;
 
 bool toyota_alt_brake = false;
@@ -112,6 +112,7 @@ int toyota_dbc_eps_torque_factor = 100;   // conversion factor for STEER_TORQUE_
 
 bool toyota_mads_lta_msg = false;
 bool toyota_unsupported_dsu_car = false;
+bool toyota_sdsu = false;
 
 static uint32_t toyota_compute_checksum(const CANPacket_t *to_push) {
   int addr = GET_ADDR(to_push);
@@ -247,7 +248,7 @@ static void toyota_rx_hook(const CANPacket_t *to_push) {
     }
 
     bool stock_ecu_detected = addr == 0x2E4;  // STEERING_LKA
-    if (!toyota_stock_longitudinal && (addr == 0x343)) {
+    if (!toyota_stock_longitudinal && !toyota_sdsu && (addr == 0x343)) {
       stock_ecu_detected = true;  // ACC_CONTROL
     }
     generic_rx_checks(stock_ecu_detected);
@@ -386,8 +387,9 @@ static safety_config toyota_init(uint16_t param) {
   toyota_lta = GET_FLAG(param, TOYOTA_PARAM_LTA);
   enable_gas_interceptor = GET_FLAG(param, TOYOTA_PARAM_GAS_INTERCEPTOR);
   toyota_dbc_eps_torque_factor = param & TOYOTA_EPS_FACTOR;
-  toyota_mads_lta_msg = GET_FLAG(param, TOYOTA_PARAM_MADS_LTA_MSG);
+  toyota_mads_lta_msg = false;
   toyota_unsupported_dsu_car = GET_FLAG(param, TOYOTA_PARAM_UNSUPPORTED_DSU_CAR);
+  toyota_sdsu = GET_FLAG(param, TOYOTA_PARAM_SDSU);
 
   // Gas interceptor should not be used if openpilot is not controlling longitudinal
   if (toyota_stock_longitudinal) {
