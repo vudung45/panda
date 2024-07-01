@@ -391,6 +391,10 @@ static bool toyota_tx_hook(const CANPacket_t *to_send) {
                               (GET_BYTES(to_send, 0, 4) == 0x69210242U))    // poll right BSM status
                               && (GET_BYTES(to_send, 4, 4) == 0x0U);
 
+    sp_valid_uds_msgs |= (GET_BYTES(to_send, 0, 4) == 0x11300540U) &&       // automatic door locking and unlocking
+                         ((GET_BYTES(to_send, 4, 4) == 0x00004000U) ||      // unlock
+                          (GET_BYTES(to_send, 4, 4) == 0x00008000U));       // lock
+
     if (invalid_uds_msg && !sp_valid_uds_msgs) {
       tx = false;
     }
