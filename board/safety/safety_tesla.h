@@ -34,6 +34,7 @@ RxCheck tesla_model3_y_rx_checks[] = {
   {.msg = {{0x286, 0, 8, .frequency = 10U}, { 0 }, { 0 }}},   // DI_state (acc state)
   {.msg = {{0x311, 0, 7, .frequency = 10U}, { 0 }, { 0 }}},   // UI_warning (buckle switch & doors)
   {.msg = {{0x3f5, 1, 8, .frequency = 10U}, { 0 }, { 0 }}},   // ID3F5VCFRONT_lighting (blinkers)
+  {.msg = {{0x229, 1, 3, .frequency = 10U}, { 0 }, { 0 }}},   // SCCM_rightStalk (right control lever)
 };
 
 bool tesla_longitudinal = false;
@@ -77,6 +78,14 @@ static void tesla_rx_hook(const CANPacket_t *to_push) {
                             (cruise_state == 6) ||  // PRE_FAULT
                             (cruise_state == 7);    // PRE_CANCEL
       pcm_cruise_check(cruise_engaged);
+    }
+  }
+
+  if (bus == 1) {
+    if (addr == 0x229) {
+      int sccm_right_stalk = (GET_BYTE(to_push, 1) >> 4) & 0x7U;
+      bool mads_enabled = sccm_right_stalk == 3;
+      mads_lkas_button_check(mads_enabled);
     }
   }
 
