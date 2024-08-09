@@ -35,7 +35,7 @@ RxCheck tesla_model3_y_rx_checks[] = {
   {.msg = {{0x311, 0, 7, .frequency = 10U}, { 0 }, { 0 }}},   // UI_warning (buckle switch & doors)
   {.msg = {{0x3f5, 1, 8, .frequency = 10U}, { 0 }, { 0 }}},   // ID3F5VCFRONT_lighting (blinkers)
   {.msg = {{0x3c2, 1, 8, .frequency = 20U}, { 0 }, { 0 }}},   // VCLEFT_switchStatus
-  {.msg = {{0x3df, 1, 4, .frequency = 2U}, { 0 }, { 0 }}},    // UI_status2 (Variable freq, min 2hz)
+  {.msg = {{0x3df, 1, 5, .frequency = 2U}, { 0 }, { 0 }}},    // UI_status2 (Variable freq, min 2hz)
 };
 
 bool tesla_longitudinal = false;
