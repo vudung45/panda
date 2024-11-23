@@ -22,7 +22,7 @@ const int TESLA_FLAG_LONGITUDINAL_CONTROL = 2;
 const CanMsg TESLA_M3_Y_TX_MSGS[] = {
   {0x488, 0, 4},  // DAS_steeringControl
   {0x2b9, 0, 8},  // DAS_control
-  {0x229, 1, 3},  // SCCM_rightStalk
+  // {0x229, 1, 3},  // SCCM_rightStalk
 };
 
 RxCheck tesla_model3_y_rx_checks[] = {
@@ -123,13 +123,13 @@ static bool tesla_tx_hook(const CANPacket_t *to_send) {
   }
 
 
-  if (addr == 0x229){
-    // Only the "Half up" and "Neutral" positions are permitted for sending stalk signals.
-    int control_lever_status = ((GET_BYTE(to_send, 1) & 0x70U) >> 4);
-    if ((control_lever_status > 1)) {
-      violation = true;
-    }
-  }
+  // if (addr == 0x229){
+  //   // Only the "Half up" and "Neutral" positions are permitted for sending stalk signals.
+  //   int control_lever_status = ((GET_BYTE(to_send, 1) & 0x70U) >> 4);
+  //   if ((control_lever_status > 1)) {
+  //     violation = true;
+  //   }
+  // }
 
   if(addr == 0x2b9) {
     // DAS_control: longitudinal control message
